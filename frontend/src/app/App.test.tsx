@@ -14,9 +14,11 @@ describe('App routing', () => {
   it('renders the home page on root route', async () => {
     renderWithRoute(['/'])
 
-    expect(
-      await screen.findByRole('heading', { name: /session trading frontend/i }),
-    ).toBeInTheDocument()
+    expect(await screen.findByText('사이드바')).toBeInTheDocument()
+    expect(screen.getByText('상단 영역')).toBeInTheDocument()
+    expect(screen.getByText('상단 앱바 영역')).toBeInTheDocument()
+    expect(screen.getByText('하단 탭 영역')).toBeInTheDocument()
+    expect(screen.getAllByText('콘텐츠 영역')).toHaveLength(2)
   })
 
   it('renders the not found page on unknown route', async () => {
