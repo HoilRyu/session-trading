@@ -1,0 +1,27 @@
+services:
+  db:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+      args:
+        TIMESCALE_IMAGE: ${TIMESCALE_IMAGE:-timescale/timescaledb:2.25.2-pg17}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-session_trading}
+      POSTGRES_USER: ${POSTGRES_USER:-session_trading}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-session_trading}
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - session_trading_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  session_trading_db_data:
