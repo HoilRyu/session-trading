@@ -35,14 +35,14 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="flex min-h-screen flex-col gap-4 p-4 md:hidden">
+      <section className="flex h-screen flex-col gap-4 overflow-hidden p-4 md:hidden">
         <AreaBlock
           label="상단 앱바 영역"
           className="h-16 bg-slate-300 text-slate-900"
         />
         <AreaBlock
           label="콘텐츠 영역"
-          className="min-h-[calc(100vh-10rem)] flex-1 bg-sky-200 text-sky-900"
+          className="min-h-0 flex-1 bg-sky-200 text-sky-900"
         />
         <AreaBlock
           label="하단 탭 영역"

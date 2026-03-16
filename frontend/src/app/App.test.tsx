@@ -19,6 +19,10 @@ describe('App routing', () => {
     expect(screen.getByText('상단 앱바 영역')).toBeInTheDocument()
     expect(screen.getByText('하단 탭 영역')).toBeInTheDocument()
     expect(screen.getAllByText('콘텐츠 영역')).toHaveLength(2)
+    expect(screen.getAllByText('콘텐츠 영역')[1]).toHaveClass('flex-1')
+    expect(screen.getAllByText('콘텐츠 영역')[1]).not.toHaveClass(
+      'min-h-[calc(100vh-10rem)]',
+    )
   })
 
   it('renders the not found page on unknown route', async () => {
