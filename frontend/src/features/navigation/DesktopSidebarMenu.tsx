@@ -1,32 +1,6 @@
 import { NavLink } from 'react-router'
 
-type SidebarMenuItem = {
-  label: string
-  to: string
-}
-
-type SidebarMenuSection = {
-  title: string
-  items: SidebarMenuItem[]
-}
-
-const SIDEBAR_MENU_SECTIONS: SidebarMenuSection[] = [
-  {
-    title: '대시보드',
-    items: [{ label: '대시보드', to: '/dashboard' }],
-  },
-  {
-    title: '투자',
-    items: [
-      { label: '투자 현황', to: '/investment-status' },
-      { label: '시세 / 차트', to: '/market-chart' },
-    ],
-  },
-  {
-    title: '기타',
-    items: [{ label: '설정', to: '/settings' }],
-  },
-]
+import { SIDEBAR_MENU_SECTIONS } from './navigationItems'
 
 export function DesktopSidebarMenu() {
   return (
@@ -52,7 +26,7 @@ export function DesktopSidebarMenu() {
               {section.items.map((item) => (
                 <NavLink
                   key={item.label}
-                  to={item.to}
+                  to={item.path}
                   className={({ isActive }) =>
                     [
                       'flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left text-sm font-medium transition-colors',

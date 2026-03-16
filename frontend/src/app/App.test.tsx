@@ -43,9 +43,9 @@ describe('App routing', () => {
       within(desktopSidebarMenu).getByRole('link', { name: '설정' }),
     ).toBeInTheDocument()
     expect(screen.getByText('상단 영역 - 대시보드')).toBeInTheDocument()
-    expect(screen.getByText('상단 앱바 영역')).toBeInTheDocument()
+    expect(screen.getByText('상단 앱바 영역 - 대시보드')).toBeInTheDocument()
     expect(screen.getByText('하단 탭 영역')).toBeInTheDocument()
-    expect(screen.getByText('콘텐츠 영역 - 대시보드')).toBeInTheDocument()
+    expect(screen.getAllByText('콘텐츠 영역 - 대시보드')).toHaveLength(2)
     expect(screen.getAllByText(/콘텐츠 영역/)).toHaveLength(2)
     expect(screen.getAllByText(/콘텐츠 영역/)[1]).toHaveClass('flex-1')
     expect(screen.getAllByText(/콘텐츠 영역/)[1]).not.toHaveClass(
@@ -78,7 +78,24 @@ describe('App routing', () => {
     )
 
     expect(await screen.findByText('상단 영역 - 투자 현황')).toBeInTheDocument()
-    expect(screen.getByText('콘텐츠 영역 - 투자 현황')).toBeInTheDocument()
+    expect(screen.getAllByText('콘텐츠 영역 - 투자 현황')).toHaveLength(2)
+  })
+
+  it('changes the mobile content area when a bottom tab is clicked', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderWithRoute(['/dashboard'])
+
+    fireEvent.click(
+      within(screen.getByText('하단 탭 영역').parentElement as HTMLElement).getByRole(
+        'link',
+        { name: '투자 현황' },
+      ),
+    )
+
+    expect(await screen.findByText('상단 앱바 영역 - 투자 현황')).toBeInTheDocument()
+    expect(screen.getAllByText('콘텐츠 영역 - 투자 현황')).toHaveLength(2)
   })
 
   it('opens the more panel and shows backend status details on mobile', async () => {
@@ -94,6 +111,9 @@ describe('App routing', () => {
     expect(morePanel).toHaveClass('absolute')
     expect(morePanel).toHaveClass('bottom-28')
     expect(screen.getByText('더보기 패널')).toBeInTheDocument()
+    expect(
+      within(morePanel as HTMLElement).getByRole('link', { name: '설정' }),
+    ).toBeInTheDocument()
     expect(screen.getAllByText('백엔드 대상')).not.toHaveLength(0)
     expect(await screen.findAllByText('오프라인')).not.toHaveLength(0)
   })
@@ -119,11 +139,29 @@ describe('App routing', () => {
     fireEvent.click(await screen.findByRole('button', { name: '더보기 열기' }))
     fireEvent.click(
       within(screen.getByText('하단 탭 영역').parentElement as HTMLElement).getByRole(
-        'button',
+        'link',
         { name: '대시보드' },
       ),
     )
 
+    expect(screen.queryByText('더보기 패널')).not.toBeInTheDocument()
+  })
+
+  it('navigates to the settings page when the settings item in more is clicked', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderWithRoute(['/dashboard'])
+
+    fireEvent.click(await screen.findByRole('button', { name: '더보기 열기' }))
+    fireEvent.click(
+      within(document.getElementById('mobile-more-panel') as HTMLElement).getByRole(
+        'link',
+        { name: '설정' },
+      ),
+    )
+
+    expect(await screen.findByText('상단 앱바 영역 - 설정')).toBeInTheDocument()
     expect(screen.queryByText('더보기 패널')).not.toBeInTheDocument()
   })
 
