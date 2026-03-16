@@ -1,18 +1,24 @@
 import { useState } from 'react'
+import { NavLink, Outlet, useMatches } from 'react-router'
 
 import {
   BackendStatusCard,
   BackendStatusDot,
   BackendStatusPanel,
 } from '../features/backend-status/components/BackendStatus'
+import { DesktopSidebarMenu } from '../features/navigation/DesktopSidebarMenu'
+import {
+  MOBILE_MORE_NAV_ITEMS,
+  MOBILE_PRIMARY_NAV_ITEMS,
+} from '../features/navigation/navigationItems'
 import { useBackendHealth } from '../features/backend-status/useBackendHealth'
 
-type AreaBlockProps = {
+type MobileAreaBlockProps = {
   label: string
   className: string
 }
 
-function AreaBlock({ label, className }: AreaBlockProps) {
+function MobileAreaBlock({ label, className }: MobileAreaBlockProps) {
   return (
     <div
       className={`flex items-center justify-center rounded-3xl text-center text-lg font-semibold md:text-xl ${className}`}
@@ -25,7 +31,16 @@ function AreaBlock({ label, className }: AreaBlockProps) {
 export function HomePage() {
   const [isMoreOpen, setIsMoreOpen] = useState(false)
   const { status, target } = useBackendHealth()
+  const matches = useMatches()
   const closeMorePanel = () => setIsMoreOpen(false)
+  const activeRouteMatch = [...matches].reverse().find((match) => {
+    const handle = match.handle as { menuLabel?: unknown } | undefined
+
+    return typeof handle?.menuLabel === 'string'
+  })
+  const activeMenuLabel =
+    (activeRouteMatch?.handle as { menuLabel?: string } | undefined)?.menuLabel ??
+    '대시보드'
 
   return (
     <main className="min-h-screen bg-slate-100">
@@ -34,30 +49,24 @@ export function HomePage() {
       <section className="hidden min-h-screen p-6 md:flex">
         <div className="flex w-full gap-6">
           <aside className="flex w-60 shrink-0 flex-col rounded-3xl bg-slate-800 p-4 text-white">
-            <div className="flex flex-1 items-center justify-center text-center text-lg font-semibold md:text-xl">
-              사이드바
-            </div>
+            <DesktopSidebarMenu />
 
             <BackendStatusCard status={status} target={target} />
           </aside>
 
-          <div className="flex min-h-[calc(100vh-3rem)] flex-1 flex-col gap-6">
-            <AreaBlock label="상단 영역" className="h-20 bg-slate-300 text-slate-900" />
-            <AreaBlock
-              label="콘텐츠 영역"
-              className="min-h-[24rem] flex-1 bg-sky-200 text-sky-900"
-            />
-          </div>
+          <Outlet />
         </div>
       </section>
 
       <section className="relative flex h-screen flex-col gap-4 overflow-hidden p-4 md:hidden">
         <div className="flex h-16 items-center justify-between rounded-3xl bg-slate-300 px-4 text-slate-900">
-          <span className="text-base font-semibold">상단 앱바 영역</span>
+          <span className="text-base font-semibold">
+            {`상단 앱바 영역 - ${activeMenuLabel}`}
+          </span>
           <BackendStatusDot status={status} />
         </div>
-        <AreaBlock
-          label="콘텐츠 영역"
+        <MobileAreaBlock
+          label={`콘텐츠 영역 - ${activeMenuLabel}`}
           className="min-h-0 flex-1 bg-sky-200 text-sky-900"
         />
         {isMoreOpen ? (
@@ -84,6 +93,31 @@ export function HomePage() {
                 </button>
               </div>
 
+              <div className="mt-4 rounded-2xl bg-slate-900 px-4 py-3 text-white">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  기타
+                </p>
+                <div className="mt-3 flex flex-col gap-2">
+                  {MOBILE_MORE_NAV_ITEMS.map((item) => (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      onClick={closeMorePanel}
+                      className={({ isActive }) =>
+                        [
+                          'rounded-2xl px-3 py-3 text-sm font-medium transition-colors',
+                          isActive
+                            ? 'bg-slate-100 text-slate-900'
+                            : 'bg-slate-800 text-slate-100',
+                        ].join(' ')
+                      }
+                    >
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
+
               <BackendStatusPanel status={status} target={target} />
             </div>
           </>
@@ -93,27 +127,21 @@ export function HomePage() {
             하단 탭 영역
           </div>
           <div className="mt-3 grid grid-cols-4 gap-2 text-center text-sm font-medium">
-            <button
-              type="button"
-              onClick={closeMorePanel}
-              className="rounded-2xl bg-slate-700 px-2 py-2"
-            >
-              대시보드
-            </button>
-            <button
-              type="button"
-              onClick={closeMorePanel}
-              className="rounded-2xl bg-slate-700 px-2 py-2"
-            >
-              투자 현황
-            </button>
-            <button
-              type="button"
-              onClick={closeMorePanel}
-              className="rounded-2xl bg-slate-700 px-2 py-2"
-            >
-              시세 / 차트
-            </button>
+            {MOBILE_PRIMARY_NAV_ITEMS.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={closeMorePanel}
+                className={({ isActive }) =>
+                  [
+                    'rounded-2xl px-2 py-2',
+                    isActive ? 'bg-slate-100 text-slate-900' : 'bg-slate-700',
+                  ].join(' ')
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
             <button
               type="button"
               aria-label="더보기 열기"
