@@ -25,6 +25,7 @@ function AreaBlock({ label, className }: AreaBlockProps) {
 export function HomePage() {
   const [isMoreOpen, setIsMoreOpen] = useState(false)
   const { status, target } = useBackendHealth()
+  const closeMorePanel = () => setIsMoreOpen(false)
 
   return (
     <main className="min-h-screen bg-slate-100">
@@ -50,7 +51,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="flex h-screen flex-col gap-4 overflow-hidden p-4 md:hidden">
+      <section className="relative flex h-screen flex-col gap-4 overflow-hidden p-4 md:hidden">
         <div className="flex h-16 items-center justify-between rounded-3xl bg-slate-300 px-4 text-slate-900">
           <span className="text-base font-semibold">상단 앱바 영역</span>
           <BackendStatusDot status={status} />
@@ -60,32 +61,59 @@ export function HomePage() {
           className="min-h-0 flex-1 bg-sky-200 text-sky-900"
         />
         {isMoreOpen ? (
-          <div
-            id="mobile-more-panel"
-            className="rounded-3xl bg-slate-200 p-4 text-slate-900"
-          >
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="text-sm font-semibold">더보기 패널</h2>
-              <button
-                type="button"
-                onClick={() => setIsMoreOpen(false)}
-                className="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-white"
-              >
-                닫기
-              </button>
-            </div>
+          <>
+            <button
+              type="button"
+              aria-label="더보기 닫기 오버레이"
+              onClick={closeMorePanel}
+              className="absolute inset-x-4 top-4 bottom-28 z-10 rounded-[2rem] bg-slate-950/10"
+            />
 
-            <BackendStatusPanel status={status} target={target} />
-          </div>
+            <div
+              id="mobile-more-panel"
+              className="absolute right-4 bottom-28 left-4 z-20 rounded-3xl bg-slate-200 p-4 text-slate-900 shadow-lg"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-sm font-semibold">더보기 패널</h2>
+                <button
+                  type="button"
+                  onClick={closeMorePanel}
+                  className="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-white"
+                >
+                  닫기
+                </button>
+              </div>
+
+              <BackendStatusPanel status={status} target={target} />
+            </div>
+          </>
         ) : null}
-        <div className="rounded-3xl bg-slate-800 p-4 text-white">
+        <div className="relative z-30 rounded-3xl bg-slate-800 p-4 text-white">
           <div className="text-center text-sm font-semibold text-slate-300">
             하단 탭 영역
           </div>
           <div className="mt-3 grid grid-cols-4 gap-2 text-center text-sm font-medium">
-            <div className="rounded-2xl bg-slate-700 px-2 py-2">대시보드</div>
-            <div className="rounded-2xl bg-slate-700 px-2 py-2">투자 현황</div>
-            <div className="rounded-2xl bg-slate-700 px-2 py-2">시세 / 차트</div>
+            <button
+              type="button"
+              onClick={closeMorePanel}
+              className="rounded-2xl bg-slate-700 px-2 py-2"
+            >
+              대시보드
+            </button>
+            <button
+              type="button"
+              onClick={closeMorePanel}
+              className="rounded-2xl bg-slate-700 px-2 py-2"
+            >
+              투자 현황
+            </button>
+            <button
+              type="button"
+              onClick={closeMorePanel}
+              className="rounded-2xl bg-slate-700 px-2 py-2"
+            >
+              시세 / 차트
+            </button>
             <button
               type="button"
               aria-label="더보기 열기"
