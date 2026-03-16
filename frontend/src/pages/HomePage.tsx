@@ -5,6 +5,7 @@ import {
   BackendStatusDot,
   BackendStatusPanel,
 } from '../features/backend-status/components/BackendStatus'
+import { DesktopSidebarMenu } from '../features/navigation/DesktopSidebarMenu'
 import { useBackendHealth } from '../features/backend-status/useBackendHealth'
 
 type AreaBlockProps = {
@@ -34,9 +35,7 @@ export function HomePage() {
       <section className="hidden min-h-screen p-6 md:flex">
         <div className="flex w-full gap-6">
           <aside className="flex w-60 shrink-0 flex-col rounded-3xl bg-slate-800 p-4 text-white">
-            <div className="flex flex-1 items-center justify-center text-center text-lg font-semibold md:text-xl">
-              사이드바
-            </div>
+            <DesktopSidebarMenu />
 
             <BackendStatusCard status={status} target={target} />
           </aside>

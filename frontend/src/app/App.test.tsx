@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { createMemoryRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
 import { afterEach, vi } from 'vitest'
@@ -25,7 +25,25 @@ describe('App routing', () => {
 
     renderWithRoute(['/'])
 
-    expect(screen.getByText('사이드바')).toBeInTheDocument()
+    const desktopSidebarMenu = screen.getByRole('navigation', {
+      name: '데스크톱 사이드바 메뉴',
+    })
+
+    expect(within(desktopSidebarMenu).getAllByText('대시보드')).toHaveLength(2)
+    expect(within(desktopSidebarMenu).getByText('투자')).toBeInTheDocument()
+    expect(within(desktopSidebarMenu).getByText('기타')).toBeInTheDocument()
+    expect(
+      within(desktopSidebarMenu).getByRole('button', { name: '대시보드' }),
+    ).toHaveAttribute('aria-current', 'page')
+    expect(
+      within(desktopSidebarMenu).getByRole('button', { name: '투자 현황' }),
+    ).toBeInTheDocument()
+    expect(
+      within(desktopSidebarMenu).getByRole('button', { name: '시세 / 차트' }),
+    ).toBeInTheDocument()
+    expect(
+      within(desktopSidebarMenu).getByRole('button', { name: '설정' }),
+    ).toBeInTheDocument()
     expect(screen.getByText('상단 영역')).toBeInTheDocument()
     expect(screen.getByText('상단 앱바 영역')).toBeInTheDocument()
     expect(screen.getByText('하단 탭 영역')).toBeInTheDocument()
@@ -82,7 +100,12 @@ describe('App routing', () => {
     renderWithRoute(['/'])
 
     fireEvent.click(await screen.findByRole('button', { name: '더보기 열기' }))
-    fireEvent.click(screen.getByRole('button', { name: '대시보드' }))
+    fireEvent.click(
+      within(screen.getByText('하단 탭 영역').parentElement as HTMLElement).getByRole(
+        'button',
+        { name: '대시보드' },
+      ),
+    )
 
     expect(screen.queryByText('더보기 패널')).not.toBeInTheDocument()
   })
