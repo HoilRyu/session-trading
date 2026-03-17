@@ -1,4 +1,6 @@
+import { MOCK_MARKET_LIST_ITEMS } from '../mockMarketListItems'
 import { TradingViewAdvancedChart } from './TradingViewAdvancedChart'
+import { MarketChartMarketListPanel } from './MarketChartMarketListPanel'
 
 type MarketChartAreaProps = {
   label: string
@@ -40,9 +42,10 @@ export function MarketChartDesktopLayout() {
           </div>
         </div>
 
-        <MarketChartArea
-          label="마켓 목록 영역"
-          className="min-h-[24rem] bg-blue-100 text-blue-900"
+        <MarketChartMarketListPanel
+          activeQuote="KRW"
+          selectedMarketId={1}
+          items={MOCK_MARKET_LIST_ITEMS}
         />
       </div>
     </div>

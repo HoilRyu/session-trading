@@ -104,7 +104,19 @@ describe('App routing', () => {
     expect(
       within(desktopSection).getByTestId('tradingview-chart-container'),
     ).toBeInTheDocument()
-    expect(within(desktopSection).getByText('마켓 목록 영역')).toBeInTheDocument()
+    expect(
+      within(desktopSection).getByRole('tab', { name: '원화' }),
+    ).toHaveAttribute('aria-selected', 'true')
+    expect(within(desktopSection).getByRole('tab', { name: 'BTC' })).toBeInTheDocument()
+    expect(
+      within(desktopSection).getByRole('tab', { name: 'USDT' }),
+    ).toBeInTheDocument()
+    expect(within(desktopSection).getByText('종목명')).toBeInTheDocument()
+    expect(within(desktopSection).getByText('현재가')).toBeInTheDocument()
+    expect(within(desktopSection).getByText('전일대비')).toBeInTheDocument()
+    expect(within(desktopSection).getByText('거래대금')).toBeInTheDocument()
+    expect(within(desktopSection).getByText('비트코인')).toBeInTheDocument()
+    expect(within(desktopSection).getByText('BTC/KRW')).toBeInTheDocument()
   })
 
   it('changes the mobile content area when a bottom tab is clicked', async () => {
