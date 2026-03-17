@@ -81,6 +81,28 @@ describe('App routing', () => {
     expect(screen.getAllByText('콘텐츠 영역 - 투자 현황')).toHaveLength(2)
   })
 
+  it('renders the market chart desktop layout when the sidebar menu is clicked', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderWithRoute(['/dashboard'])
+
+    const desktopSidebarMenu = screen.getByRole('navigation', {
+      name: '데스크톱 사이드바 메뉴',
+    })
+
+    fireEvent.click(
+      within(desktopSidebarMenu).getByRole('link', { name: '시세 / 차트' }),
+    )
+
+    expect(await screen.findByText('상단 영역 - 시세 / 차트')).toBeInTheDocument()
+    expect(
+      screen.getByText('거래소 선택 + 현재가/요약 정보 영역'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('차트 영역')).toBeInTheDocument()
+    expect(screen.getByText('마켓 목록 영역')).toBeInTheDocument()
+  })
+
   it('changes the mobile content area when a bottom tab is clicked', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true })
     vi.stubGlobal('fetch', fetchMock)

@@ -1,5 +1,5 @@
-import { DesktopRouteContent } from '../features/navigation/DesktopRouteContent'
+import { MarketChartDesktopLayout } from '../features/market-chart/components/MarketChartDesktopLayout'
 
 export function MarketChartPage() {
-  return <DesktopRouteContent menuLabel="시세 / 차트" />
+  return <MarketChartDesktopLayout />
 }
