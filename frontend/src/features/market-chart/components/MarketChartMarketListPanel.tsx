@@ -30,7 +30,10 @@ export function MarketChartMarketListPanel({
   onRetry,
 }: MarketChartMarketListPanelProps) {
   return (
-    <section className="flex min-h-[24rem] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white">
+    <section
+      data-testid="market-list-panel"
+      className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white"
+    >
       <div
         role="tablist"
         aria-label="시세 차트 quote 탭"
@@ -67,7 +70,7 @@ export function MarketChartMarketListPanel({
 
       <div
         data-testid="market-list-scroll"
-        className="flex-1 overflow-y-auto bg-slate-50 px-2 py-2"
+        className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-2 py-2"
       >
         {loading ? (
           <div className="flex h-full items-center justify-center rounded-2xl bg-white text-sm font-medium text-slate-500">
