@@ -101,7 +101,9 @@ describe('App routing', () => {
     expect(
       within(desktopSection).getByText('거래소 선택 + 현재가/요약 정보 영역'),
     ).toBeInTheDocument()
-    expect(within(desktopSection).getByText('차트 영역')).toBeInTheDocument()
+    expect(
+      within(desktopSection).getByTestId('tradingview-chart-container'),
+    ).toBeInTheDocument()
     expect(within(desktopSection).getByText('마켓 목록 영역')).toBeInTheDocument()
   })
 

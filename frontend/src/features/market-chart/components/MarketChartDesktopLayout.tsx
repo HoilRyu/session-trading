@@ -1,3 +1,5 @@
+import { TradingViewAdvancedChart } from './TradingViewAdvancedChart'
+
 type MarketChartAreaProps = {
   label: string
   className: string
@@ -33,10 +35,9 @@ export function MarketChartDesktopLayout() {
             label="거래소 선택 + 현재가/요약 정보 영역"
             className="h-28 bg-slate-200 text-slate-900"
           />
-          <MarketChartArea
-            label="차트 영역"
-            className="min-h-[20rem] flex-1 bg-sky-200 text-sky-900"
-          />
+          <div className="min-h-[20rem] flex-1">
+            <TradingViewAdvancedChart />
+          </div>
         </div>
 
         <MarketChartArea

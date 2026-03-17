@@ -18,7 +18,7 @@ describe('MarketChartDesktopLayout', () => {
     expect(
       screen.getByText('거래소 선택 + 현재가/요약 정보 영역'),
     ).toBeInTheDocument()
-    expect(screen.getByText('차트 영역')).toBeInTheDocument()
+    expect(screen.getByTestId('tradingview-chart-container')).toBeInTheDocument()
     expect(screen.getByText('마켓 목록 영역')).toBeInTheDocument()
   })
 })
