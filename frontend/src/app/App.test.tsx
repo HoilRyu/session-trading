@@ -95,12 +95,14 @@ describe('App routing', () => {
       within(desktopSidebarMenu).getByRole('link', { name: '시세 / 차트' }),
     )
 
-    expect(await screen.findByText('상단 영역 - 시세 / 차트')).toBeInTheDocument()
+    const desktopHeading = await screen.findByText('상단 영역 - 시세 / 차트')
+    const desktopSection = desktopHeading.closest('section') as HTMLElement
+
     expect(
-      screen.getByText('거래소 선택 + 현재가/요약 정보 영역'),
+      within(desktopSection).getByText('거래소 선택 + 현재가/요약 정보 영역'),
     ).toBeInTheDocument()
-    expect(screen.getByText('차트 영역')).toBeInTheDocument()
-    expect(screen.getByText('마켓 목록 영역')).toBeInTheDocument()
+    expect(within(desktopSection).getByText('차트 영역')).toBeInTheDocument()
+    expect(within(desktopSection).getByText('마켓 목록 영역')).toBeInTheDocument()
   })
 
   it('changes the mobile content area when a bottom tab is clicked', async () => {
@@ -118,6 +120,21 @@ describe('App routing', () => {
 
     expect(await screen.findByText('상단 앱바 영역 - 투자 현황')).toBeInTheDocument()
     expect(screen.getAllByText('콘텐츠 영역 - 투자 현황')).toHaveLength(2)
+  })
+
+  it('renders the market list area on mobile for the market chart route', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderWithRoute(['/market-chart'])
+
+    const mobileAppBar = await screen.findByText('상단 앱바 영역 - 시세 / 차트')
+    const mobileSection = mobileAppBar.closest('section') as HTMLElement
+
+    expect(within(mobileSection).getByText('마켓 목록 영역')).toBeInTheDocument()
+    expect(
+      within(mobileSection).queryByText('콘텐츠 영역 - 시세 / 차트'),
+    ).not.toBeInTheDocument()
   })
 
   it('opens the more panel and shows backend status details on mobile', async () => {
