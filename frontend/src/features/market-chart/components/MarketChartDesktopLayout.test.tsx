@@ -39,13 +39,19 @@ describe('MarketChartDesktopLayout', () => {
 
     render(<MarketChartDesktopLayout />)
 
+    expect(screen.getByTestId('market-chart-desktop-layout')).toHaveClass(
+      'h-[calc(100vh-3rem)]',
+      'min-h-0',
+    )
     expect(screen.getByTestId('market-chart-content-grid')).toHaveClass(
       'grid',
+      'min-h-0',
       'grid-cols-[minmax(0,1fr)_minmax(18rem,28%)]',
     )
     expect(screen.getByTestId('market-chart-main-column')).toHaveClass(
       'flex',
       'flex-col',
+      'min-h-0',
     )
     expect(screen.getByText('상단 영역 - 시세 / 차트')).toBeInTheDocument()
     expect(

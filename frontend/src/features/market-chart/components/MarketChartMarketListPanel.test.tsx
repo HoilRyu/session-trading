@@ -42,6 +42,7 @@ describe('MarketChartMarketListPanel', () => {
       />,
     )
 
+    expect(screen.getByTestId('market-list-panel')).toHaveClass('h-full', 'min-h-0')
     expect(screen.getByRole('tab', { name: '원화' })).toHaveAttribute(
       'aria-selected',
       'true',
@@ -55,7 +56,10 @@ describe('MarketChartMarketListPanel', () => {
     expect(screen.getByText('비트코인')).toBeInTheDocument()
     expect(screen.getByText('BTC/KRW')).toBeInTheDocument()
     expect(screen.getAllByTestId('market-list-row')).toHaveLength(2)
-    expect(screen.getByTestId('market-list-scroll')).toHaveClass('overflow-y-auto')
+    expect(screen.getByTestId('market-list-scroll')).toHaveClass(
+      'min-h-0',
+      'overflow-y-auto',
+    )
     expect(
       screen.getAllByTestId('market-list-row').filter((row) => {
         return row.getAttribute('data-selected') === 'true'
