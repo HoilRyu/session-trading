@@ -6,8 +6,12 @@ import { MarketChartMarketListRow } from './MarketChartMarketListRow'
 
 type MarketChartMarketListPanelProps = {
   activeQuote: MarketListQuote
-  selectedMarketId: number
+  selectedMarketId: number | null
   items: MarketChartMarketListItem[]
+  loading: boolean
+  error: string | null
+  onQuoteChange: (quote: MarketListQuote) => void
+  onRetry: () => void
 }
 
 const QUOTE_TABS: Array<{ value: MarketListQuote; label: string }> = [
@@ -20,6 +24,10 @@ export function MarketChartMarketListPanel({
   activeQuote,
   selectedMarketId,
   items,
+  loading,
+  error,
+  onQuoteChange,
+  onRetry,
 }: MarketChartMarketListPanelProps) {
   return (
     <section className="flex min-h-[24rem] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white">
@@ -37,6 +45,7 @@ export function MarketChartMarketListPanel({
               type="button"
               role="tab"
               aria-selected={isActive}
+              onClick={() => onQuoteChange(tab.value)}
               className={`border-b-2 px-3 py-3 text-sm font-semibold ${
                 isActive
                   ? 'border-sky-500 text-sky-600'
@@ -60,15 +69,39 @@ export function MarketChartMarketListPanel({
         data-testid="market-list-scroll"
         className="flex-1 overflow-y-auto bg-slate-50 px-2 py-2"
       >
-        <div className="flex flex-col gap-1.5">
-          {items.map((item) => (
-            <MarketChartMarketListRow
-              key={item.marketListingId}
-              item={item}
-              isSelected={item.marketListingId === selectedMarketId}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex h-full items-center justify-center rounded-2xl bg-white text-sm font-medium text-slate-500">
+            마켓 목록을 불러오는 중...
+          </div>
+        ) : error ? (
+          <div className="flex h-full flex-col items-center justify-center gap-3 rounded-2xl bg-white px-4 text-center">
+            <p className="text-sm font-medium text-slate-600">{error}</p>
+            <button
+              type="button"
+              onClick={onRetry}
+              className="rounded-full bg-slate-800 px-4 py-2 text-xs font-semibold text-white"
+            >
+              다시 시도
+            </button>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="flex h-full items-center justify-center rounded-2xl bg-white text-sm font-medium text-slate-500">
+            조회 결과가 없어요.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            {items.map((item) => (
+              <MarketChartMarketListRow
+                key={item.marketListingId}
+                item={item}
+                isSelected={
+                  selectedMarketId !== null &&
+                  item.marketListingId === selectedMarketId
+                }
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   )

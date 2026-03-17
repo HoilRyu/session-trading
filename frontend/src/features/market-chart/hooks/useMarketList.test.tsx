@@ -1,6 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
 
+import type { MarketListQuote } from '../marketList.types'
 import { getDefaultSelectedMarketId, useMarketList } from './useMarketList'
 
 afterEach(() => {
@@ -89,13 +90,13 @@ describe('useMarketList', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     const { rerender } = renderHook(
-      ({ quote }) => useMarketList({ quote }),
-      { initialProps: { quote: 'KRW' as const } },
+      ({ quote }: { quote: MarketListQuote }) => useMarketList({ quote }),
+      { initialProps: { quote: 'KRW' as MarketListQuote } },
     )
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
 
-    rerender({ quote: 'USDT' as const })
+    rerender({ quote: 'USDT' as MarketListQuote })
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
     expect(fetchMock).toHaveBeenLastCalledWith(

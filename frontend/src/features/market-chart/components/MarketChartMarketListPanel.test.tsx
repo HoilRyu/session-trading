@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 
 import type { MarketChartMarketListItem } from '../marketList.types'
 import { MarketChartMarketListPanel } from './MarketChartMarketListPanel'
@@ -27,12 +27,18 @@ const TEST_ITEMS: MarketChartMarketListItem[] = [
 ]
 
 describe('MarketChartMarketListPanel', () => {
-  it('탭, 헤더, 리스트 구조를 렌더링한다', () => {
+  it('탭 전환과 리스트 구조를 렌더링한다', () => {
+    const handleQuoteChange = vi.fn()
+
     render(
       <MarketChartMarketListPanel
         activeQuote="KRW"
         selectedMarketId={1}
         items={TEST_ITEMS}
+        loading={false}
+        error={null}
+        onQuoteChange={handleQuoteChange}
+        onRetry={vi.fn()}
       />,
     )
 
@@ -55,5 +61,45 @@ describe('MarketChartMarketListPanel', () => {
         return row.getAttribute('data-selected') === 'true'
       }),
     ).toHaveLength(1)
+
+    fireEvent.click(screen.getByRole('tab', { name: 'BTC' }))
+
+    expect(handleQuoteChange).toHaveBeenCalledWith('BTC')
+  })
+
+  it('로딩과 에러 상태를 렌더링한다', () => {
+    const handleRetry = vi.fn()
+
+    const { rerender } = render(
+      <MarketChartMarketListPanel
+        activeQuote="KRW"
+        selectedMarketId={null}
+        items={[]}
+        loading
+        error={null}
+        onQuoteChange={vi.fn()}
+        onRetry={handleRetry}
+      />,
+    )
+
+    expect(screen.getByText('마켓 목록을 불러오는 중...')).toBeInTheDocument()
+
+    rerender(
+      <MarketChartMarketListPanel
+        activeQuote="KRW"
+        selectedMarketId={null}
+        items={[]}
+        loading={false}
+        error="마켓 목록을 불러오지 못했어요."
+        onQuoteChange={vi.fn()}
+        onRetry={handleRetry}
+      />,
+    )
+
+    expect(screen.getByText('마켓 목록을 불러오지 못했어요.')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '다시 시도' }))
+
+    expect(handleRetry).toHaveBeenCalledTimes(1)
   })
 })

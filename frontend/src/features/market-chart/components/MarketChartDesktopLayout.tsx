@@ -1,4 +1,7 @@
-import { MOCK_MARKET_LIST_ITEMS } from '../mockMarketListItems'
+import { useState } from 'react'
+
+import { getDefaultSelectedMarketId, useMarketList } from '../hooks/useMarketList'
+import type { MarketListQuote } from '../marketList.types'
 import { TradingViewAdvancedChart } from './TradingViewAdvancedChart'
 import { MarketChartMarketListPanel } from './MarketChartMarketListPanel'
 
@@ -18,6 +21,12 @@ function MarketChartArea({ label, className }: MarketChartAreaProps) {
 }
 
 export function MarketChartDesktopLayout() {
+  const [activeQuote, setActiveQuote] = useState<MarketListQuote>('KRW')
+  const { items, loading, error, refetch } = useMarketList({
+    quote: activeQuote,
+  })
+  const selectedMarketId = getDefaultSelectedMarketId(items)
+
   return (
     <div className="flex min-h-[calc(100vh-3rem)] flex-1 flex-col gap-6">
       <MarketChartArea
@@ -43,9 +52,13 @@ export function MarketChartDesktopLayout() {
         </div>
 
         <MarketChartMarketListPanel
-          activeQuote="KRW"
-          selectedMarketId={1}
-          items={MOCK_MARKET_LIST_ITEMS}
+          activeQuote={activeQuote}
+          selectedMarketId={selectedMarketId}
+          items={items}
+          loading={loading}
+          error={error}
+          onQuoteChange={setActiveQuote}
+          onRetry={refetch}
         />
       </div>
     </div>

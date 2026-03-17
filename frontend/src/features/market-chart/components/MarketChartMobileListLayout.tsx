@@ -1,10 +1,29 @@
+import { useState } from 'react'
+
+import { useMarketList } from '../hooks/useMarketList'
+import type { MarketListQuote } from '../marketList.types'
+import { MarketChartMarketListPanel } from './MarketChartMarketListPanel'
+
 export function MarketChartMobileListLayout() {
+  const [activeQuote, setActiveQuote] = useState<MarketListQuote>('KRW')
+  const { items, loading, error, refetch } = useMarketList({
+    quote: activeQuote,
+  })
+
   return (
     <div
       data-testid="market-chart-mobile-list"
-      className="flex min-h-0 flex-1 items-center justify-center rounded-3xl bg-blue-100 text-center text-lg font-semibold text-blue-900"
+      className="min-h-0 flex-1"
     >
-      마켓 목록 영역
+      <MarketChartMarketListPanel
+        activeQuote={activeQuote}
+        selectedMarketId={null}
+        items={items}
+        loading={loading}
+        error={error}
+        onQuoteChange={setActiveQuote}
+        onRetry={refetch}
+      />
     </div>
   )
 }

@@ -4,6 +4,45 @@ import { afterEach, vi } from 'vitest'
 
 import { routes } from './router'
 
+function createMarketListResponse(items: Array<Record<string, unknown>>) {
+  return {
+    start: 0,
+    limit: 50,
+    total: items.length,
+    refreshed_at: '2026-03-17T12:00:00Z',
+    items,
+  }
+}
+
+function createFetchMock({
+  healthOk = true,
+  marketOk = true,
+  marketItems = [],
+}: {
+  healthOk?: boolean
+  marketOk?: boolean
+  marketItems?: Array<Record<string, unknown>>
+} = {}) {
+  return vi.fn().mockImplementation(async (input: string) => {
+    if (input.endsWith('/health')) {
+      return { ok: healthOk }
+    }
+
+    if (input.includes('/api/v1/markets')) {
+      if (!marketOk) {
+        return { ok: false }
+      }
+
+      return {
+        ok: true,
+        json: async () => createMarketListResponse(marketItems),
+      }
+    }
+
+    return { ok: true, json: async () => ({}) }
+  })
+}
+
 function renderWithRoute(initialEntries: string[]) {
   const router = createMemoryRouter(routes, { initialEntries })
 
@@ -82,7 +121,24 @@ describe('App routing', () => {
   })
 
   it('renders the market chart desktop layout when the sidebar menu is clicked', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    const fetchMock = createFetchMock({
+      marketItems: [
+        {
+          market_listing_id: 1,
+          exchange: 'upbit',
+          raw_symbol: 'KRW-BTC',
+          base_asset: 'BTC',
+          quote_asset: 'KRW',
+          display_name_ko: '비트코인',
+          display_name_en: 'Bitcoin',
+          has_warning: false,
+          trade_price: '109131000.00000000',
+          signed_change_rate: '-0.0084',
+          acc_trade_volume_24h: '422181000.00000000',
+          event_time: null,
+        },
+      ],
+    })
     vi.stubGlobal('fetch', fetchMock)
 
     renderWithRoute(['/dashboard'])
@@ -115,7 +171,7 @@ describe('App routing', () => {
     expect(within(desktopSection).getByText('현재가')).toBeInTheDocument()
     expect(within(desktopSection).getByText('전일대비')).toBeInTheDocument()
     expect(within(desktopSection).getByText('거래대금')).toBeInTheDocument()
-    expect(within(desktopSection).getByText('비트코인')).toBeInTheDocument()
+    expect(await within(desktopSection).findByText('비트코인')).toBeInTheDocument()
     expect(within(desktopSection).getByText('BTC/KRW')).toBeInTheDocument()
   })
 
@@ -137,7 +193,24 @@ describe('App routing', () => {
   })
 
   it('renders the market list area on mobile for the market chart route', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    const fetchMock = createFetchMock({
+      marketItems: [
+        {
+          market_listing_id: 2,
+          exchange: 'upbit',
+          raw_symbol: 'KRW-ETH',
+          base_asset: 'ETH',
+          quote_asset: 'KRW',
+          display_name_ko: '이더리움',
+          display_name_en: 'Ethereum',
+          has_warning: false,
+          trade_price: '3426000.00000000',
+          signed_change_rate: '-0.0101',
+          acc_trade_volume_24h: '351296000.00000000',
+          event_time: null,
+        },
+      ],
+    })
     vi.stubGlobal('fetch', fetchMock)
 
     renderWithRoute(['/market-chart'])
@@ -145,7 +218,8 @@ describe('App routing', () => {
     const mobileAppBar = await screen.findByText('상단 앱바 영역 - 시세 / 차트')
     const mobileSection = mobileAppBar.closest('section') as HTMLElement
 
-    expect(within(mobileSection).getByText('마켓 목록 영역')).toBeInTheDocument()
+    expect(await within(mobileSection).findByText('이더리움')).toBeInTheDocument()
+    expect(within(mobileSection).getByText('ETH/KRW')).toBeInTheDocument()
     expect(
       within(mobileSection).queryByText('콘텐츠 영역 - 시세 / 차트'),
     ).not.toBeInTheDocument()
