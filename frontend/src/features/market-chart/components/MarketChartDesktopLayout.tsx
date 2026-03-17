@@ -28,7 +28,10 @@ export function MarketChartDesktopLayout() {
   const selectedMarketId = getDefaultSelectedMarketId(items)
 
   return (
-    <div className="flex min-h-[calc(100vh-3rem)] flex-1 flex-col gap-6">
+    <div
+      data-testid="market-chart-desktop-layout"
+      className="flex h-[calc(100vh-3rem)] min-h-0 flex-1 flex-col gap-6"
+    >
       <MarketChartArea
         label="상단 영역 - 시세 / 차트"
         className="h-20 bg-slate-300 text-slate-900"
@@ -36,7 +39,7 @@ export function MarketChartDesktopLayout() {
 
       <div
         data-testid="market-chart-content-grid"
-        className="grid min-h-[24rem] flex-1 grid-cols-[minmax(0,1fr)_minmax(18rem,28%)] gap-6"
+        className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(18rem,28%)] gap-6"
       >
         <div
           data-testid="market-chart-main-column"
@@ -46,7 +49,7 @@ export function MarketChartDesktopLayout() {
             label="거래소 선택 + 현재가/요약 정보 영역"
             className="h-28 bg-slate-200 text-slate-900"
           />
-          <div className="min-h-[20rem] flex-1">
+          <div className="min-h-0 flex-1">
             <TradingViewAdvancedChart />
           </div>
         </div>
