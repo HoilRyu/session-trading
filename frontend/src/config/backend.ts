@@ -1,3 +1,5 @@
+import type { MarketListQueryParams } from '../features/market-chart/api/marketList.types'
+
 const DEFAULT_BACKEND_HOST = '127.0.0.1'
 const DEFAULT_BACKEND_PORT = '8000'
 const DEFAULT_BACKEND_USE_HTTPS = false
@@ -38,4 +40,24 @@ export function getBackendHealthUrl() {
 
 export function getBackendWsBaseUrl() {
   return `${getWsProtocol()}://${getBackendTargetLabel()}`
+}
+
+export function getMarketsUrl({
+  exchange = 'upbit',
+  quote = 'KRW',
+  orderBy = 'name',
+  orderDir = 'asc',
+  start = 0,
+  limit = 50,
+}: MarketListQueryParams = {}) {
+  const params = new URLSearchParams({
+    exchange,
+    quote,
+    order_by: orderBy,
+    order_dir: orderDir,
+    start: String(start),
+    limit: String(limit),
+  })
+
+  return `${getBackendBaseUrl()}/api/v1/markets?${params.toString()}`
 }

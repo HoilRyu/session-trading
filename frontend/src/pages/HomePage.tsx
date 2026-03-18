@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { NavLink, Outlet, useMatches } from 'react-router'
+import { NavLink, Outlet, useLocation, useMatches } from 'react-router'
 
 import {
   BackendStatusCard,
   BackendStatusDot,
   BackendStatusPanel,
 } from '../features/backend-status/components/BackendStatus'
+import { MarketChartMobileListLayout } from '../features/market-chart/components/MarketChartMobileListLayout'
 import { DesktopSidebarMenu } from '../features/navigation/DesktopSidebarMenu'
 import {
   MOBILE_MORE_NAV_ITEMS,
@@ -31,6 +32,7 @@ function MobileAreaBlock({ label, className }: MobileAreaBlockProps) {
 export function HomePage() {
   const [isMoreOpen, setIsMoreOpen] = useState(false)
   const { status, target } = useBackendHealth()
+  const location = useLocation()
   const matches = useMatches()
   const closeMorePanel = () => setIsMoreOpen(false)
   const activeRouteMatch = [...matches].reverse().find((match) => {
@@ -41,6 +43,7 @@ export function HomePage() {
   const activeMenuLabel =
     (activeRouteMatch?.handle as { menuLabel?: string } | undefined)?.menuLabel ??
     '대시보드'
+  const isMobileMarketChartListRoute = location.pathname === '/market-chart'
 
   return (
     <main className="min-h-screen bg-slate-100">
@@ -65,10 +68,14 @@ export function HomePage() {
           </span>
           <BackendStatusDot status={status} />
         </div>
-        <MobileAreaBlock
-          label={`콘텐츠 영역 - ${activeMenuLabel}`}
-          className="min-h-0 flex-1 bg-sky-200 text-sky-900"
-        />
+        {isMobileMarketChartListRoute ? (
+          <MarketChartMobileListLayout />
+        ) : (
+          <MobileAreaBlock
+            label={`콘텐츠 영역 - ${activeMenuLabel}`}
+            className="min-h-0 flex-1 bg-sky-200 text-sky-900"
+          />
+        )}
         {isMoreOpen ? (
           <>
             <button
