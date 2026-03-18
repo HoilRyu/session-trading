@@ -52,7 +52,9 @@ describe('MarketChartDesktopLayout', () => {
       loadMore: loadMoreMock,
       refetch: vi.fn(),
     })
-    getDefaultSelectedMarketIdMock.mockReturnValue(999)
+    getDefaultSelectedMarketIdMock.mockImplementation((items) => {
+      return items[0]?.marketListingId ?? null
+    })
     tradingViewChartMock.mockImplementation(({ symbol }: { symbol: string }) => {
       return <div data-testid="tradingview-chart-container">{symbol}</div>
     })
@@ -64,6 +66,8 @@ describe('MarketChartDesktopLayout', () => {
       quote: 'KRW',
       orderBy: 'name',
       orderDir: 'asc',
+      pollIntervalMs: 1000,
+      autoRefreshEnabled: true,
     })
 
     expect(screen.getByTestId('market-chart-desktop-layout')).toHaveClass(
@@ -146,6 +150,8 @@ describe('MarketChartDesktopLayout', () => {
         quote: 'KRW',
         orderBy: 'price',
         orderDir: 'desc',
+        pollIntervalMs: 1000,
+        autoRefreshEnabled: true,
       })
     })
 
@@ -157,6 +163,8 @@ describe('MarketChartDesktopLayout', () => {
         quote: 'KRW',
         orderBy: 'price',
         orderDir: 'asc',
+        pollIntervalMs: 1000,
+        autoRefreshEnabled: true,
       })
     })
   })
@@ -275,6 +283,8 @@ describe('MarketChartDesktopLayout', () => {
         quote: 'KRW',
         orderBy: 'name',
         orderDir: 'asc',
+        pollIntervalMs: 1000,
+        autoRefreshEnabled: true,
       })
     })
 
@@ -361,6 +371,8 @@ describe('MarketChartDesktopLayout', () => {
         quote: 'USDT',
         orderBy: 'name',
         orderDir: 'asc',
+        pollIntervalMs: 1000,
+        autoRefreshEnabled: true,
       })
     })
 
@@ -475,6 +487,8 @@ describe('MarketChartDesktopLayout', () => {
         quote: 'USDT',
         orderBy: 'name',
         orderDir: 'asc',
+        pollIntervalMs: 1000,
+        autoRefreshEnabled: true,
       })
     })
 
@@ -486,11 +500,308 @@ describe('MarketChartDesktopLayout', () => {
         quote: 'KRW',
         orderBy: 'name',
         orderDir: 'asc',
+        pollIntervalMs: 1000,
+        autoRefreshEnabled: true,
       })
     })
     expect(screen.getByRole('tab', { name: '원화' })).toHaveAttribute(
       'aria-selected',
       'true',
     )
+  })
+
+  it('settings 기본값을 적용해 목록 조회와 차트 옵션을 초기화한다', async () => {
+    useMarketListMock.mockImplementation(
+      ({
+        exchange,
+        quote,
+      }: {
+        exchange: 'upbit' | 'bithumb' | 'binance'
+        quote: 'KRW' | 'BTC' | 'USDT'
+      }) => {
+        return {
+          items: [
+            {
+              marketListingId: 3001,
+              chartSymbol:
+                exchange === 'binance' && quote === 'BTC'
+                  ? 'BINANCE:ETHBTC'
+                  : 'UPBIT:BTCKRW',
+              baseAsset: exchange === 'binance' && quote === 'BTC' ? 'ETH' : 'BTC',
+              quoteAsset: quote,
+              displayNameEn: exchange === 'binance' ? 'Ethereum' : 'Bitcoin',
+              tradePrice: '74,057.4',
+              changeRate: '+0.18%',
+              volumeText: '1,306,763,722.01',
+            },
+          ],
+          total: 1,
+          hasMore: false,
+          loading: false,
+          loadingMore: false,
+          refreshing: false,
+          error: null,
+          loadMore: vi.fn(),
+          refetch: vi.fn(),
+        }
+      },
+    )
+    getDefaultSelectedMarketIdMock.mockImplementation((items) => {
+      return items[0]?.marketListingId ?? null
+    })
+    tradingViewChartMock.mockImplementation((props: Record<string, unknown>) => {
+      return (
+        <div data-testid="tradingview-chart-container">
+          {JSON.stringify(props)}
+        </div>
+      )
+    })
+
+    render(
+      <MarketChartDesktopLayout
+        settings={{
+          general: {
+            default_exchange: 'binance',
+          },
+          market_data: {
+            default_quote: 'BTC',
+            default_order_by: 'trade_amount_24h',
+            default_order_dir: 'desc',
+            poll_interval_ms: 2500,
+            auto_refresh_enabled: false,
+            page_size: 20,
+            exchanges: {
+              upbit: { enabled: false },
+              bithumb: { enabled: false },
+              binance: { enabled: true },
+            },
+          },
+          chart: {
+            default_exchange: 'binance',
+            default_symbol: 'ETHBTC',
+            default_interval: '240',
+            theme: 'dark',
+            show_volume: false,
+          },
+        }}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(useMarketListMock).toHaveBeenLastCalledWith({
+        exchange: 'binance',
+        quote: 'BTC',
+        limit: 20,
+        orderBy: 'trade_amount_24h',
+        orderDir: 'desc',
+        pollIntervalMs: 2500,
+        autoRefreshEnabled: false,
+      })
+    })
+
+    expect(screen.getByText(/"interval":"240"/)).toBeInTheDocument()
+    expect(screen.getByText(/"theme":"dark"/)).toBeInTheDocument()
+    expect(screen.getByText(/"showVolume":false/)).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '바이낸스' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: '업비트' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: '빗썸' })).not.toBeInTheDocument()
+  })
+
+  it('선택 마켓이 없을 때는 설정의 기본 심볼과 페어를 요약에 사용한다', async () => {
+    useMarketListMock.mockReturnValue({
+      items: [],
+      total: 0,
+      hasMore: false,
+      loading: false,
+      loadingMore: false,
+      refreshing: false,
+      error: null,
+      loadMore: vi.fn(),
+      refetch: vi.fn(),
+    })
+    getDefaultSelectedMarketIdMock.mockReturnValue(null)
+    tradingViewChartMock.mockImplementation((props: Record<string, unknown>) => {
+      return (
+        <div data-testid="tradingview-chart-container">
+          {JSON.stringify(props)}
+        </div>
+      )
+    })
+
+    render(
+      <MarketChartDesktopLayout
+        settings={{
+          general: {
+            default_exchange: 'binance',
+          },
+          market_data: {
+            default_quote: 'BTC',
+            poll_interval_ms: 1000,
+            auto_refresh_enabled: true,
+          },
+          chart: {
+            default_exchange: 'binance',
+            default_symbol: 'ETHBTC',
+            default_interval: '240',
+            theme: 'dark',
+            show_volume: false,
+          },
+        }}
+      />,
+    )
+
+    expect(screen.getByText(/"symbol":"BINANCE:ETHBTC"/)).toBeInTheDocument()
+    expect(screen.getByText('바이낸스 · ETH/BTC')).toBeInTheDocument()
+  })
+
+  it('설정 기본 심볼이 현재 목록에 없으면 현재 목록의 기본 선택 마켓으로 차트를 맞춘다', async () => {
+    useMarketListMock.mockReturnValue({
+      items: [
+        {
+          marketListingId: 4201,
+          chartSymbol: 'BINANCE:SOLBTC',
+          baseAsset: 'SOL',
+          quoteAsset: 'BTC',
+          displayNameKo: '솔라나',
+          displayNameEn: 'Solana',
+          tradePrice: '0.00123000',
+          changeRate: '+1.23%',
+          volumeText: '456.78',
+        },
+      ],
+      total: 1,
+      hasMore: false,
+      loading: false,
+      loadingMore: false,
+      refreshing: false,
+      error: null,
+      loadMore: vi.fn(),
+      refetch: vi.fn(),
+    })
+    getDefaultSelectedMarketIdMock.mockReturnValue(4201)
+    tradingViewChartMock.mockImplementation((props: Record<string, unknown>) => {
+      return (
+        <div data-testid="tradingview-chart-container">
+          {JSON.stringify(props)}
+        </div>
+      )
+    })
+
+    render(
+      <MarketChartDesktopLayout
+        settings={{
+          general: {
+            default_exchange: 'binance',
+          },
+          market_data: {
+            default_quote: 'BTC',
+            poll_interval_ms: 1000,
+            auto_refresh_enabled: true,
+          },
+          chart: {
+            default_exchange: 'binance',
+            default_symbol: 'ETHBTC',
+            default_interval: '240',
+            theme: 'dark',
+            show_volume: false,
+          },
+        }}
+      />,
+    )
+
+    expect(screen.getByText(/"symbol":"BINANCE:SOLBTC"/)).toBeInTheDocument()
+    expect(screen.getAllByText('솔라나')).toHaveLength(2)
+    expect(screen.getByText('바이낸스 · SOL/BTC')).toBeInTheDocument()
+  })
+
+  it('늦게 도착한 settings는 이미 고른 거래소와 quote를 덮어쓰지 않는다', async () => {
+    useMarketListMock.mockReturnValue({
+      items: [
+        {
+          marketListingId: 3001,
+          chartSymbol: 'BINANCE:BTCUSDT',
+          baseAsset: 'BTC',
+          quoteAsset: 'USDT',
+          displayNameEn: 'Bitcoin',
+          tradePrice: '74,057.4',
+          changeRate: '+0.18%',
+          volumeText: '1,306,763,722.01',
+        },
+      ],
+      total: 1,
+      hasMore: false,
+      loading: false,
+      loadingMore: false,
+      refreshing: false,
+      error: null,
+      loadMore: vi.fn(),
+      refetch: vi.fn(),
+    })
+    getDefaultSelectedMarketIdMock.mockImplementation((items) => {
+      return items[0]?.marketListingId ?? null
+    })
+    tradingViewChartMock.mockImplementation((props: Record<string, unknown>) => {
+      return (
+        <div data-testid="tradingview-chart-container">
+          {JSON.stringify(props)}
+        </div>
+      )
+    })
+
+    const { rerender } = render(<MarketChartDesktopLayout settings={null} />)
+
+    fireEvent.click(screen.getByRole('tab', { name: '바이낸스' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'BTC' }))
+
+    await waitFor(() => {
+      expect(useMarketListMock).toHaveBeenLastCalledWith({
+        exchange: 'binance',
+        quote: 'BTC',
+        orderBy: 'name',
+        orderDir: 'asc',
+        pollIntervalMs: 1000,
+        autoRefreshEnabled: true,
+      })
+    })
+
+    rerender(
+      <MarketChartDesktopLayout
+        settings={{
+          general: {
+            default_exchange: 'bithumb',
+          },
+          market_data: {
+            default_quote: 'KRW',
+            default_order_by: 'change_rate',
+            default_order_dir: 'desc',
+            poll_interval_ms: 2000,
+            auto_refresh_enabled: false,
+            page_size: 30,
+            exchanges: {
+              upbit: { enabled: false },
+              bithumb: { enabled: false },
+              binance: { enabled: true },
+            },
+          },
+          chart: {
+            default_interval: '15',
+            theme: 'dark',
+            show_volume: false,
+          },
+        }}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(useMarketListMock).toHaveBeenLastCalledWith({
+        exchange: 'binance',
+        quote: 'BTC',
+        limit: 30,
+        orderBy: 'change_rate',
+        orderDir: 'desc',
+        pollIntervalMs: 2000,
+        autoRefreshEnabled: false,
+      })
+    })
   })
 })

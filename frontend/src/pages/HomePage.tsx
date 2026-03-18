@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useMatches } from 'react-router'
 
 import {
@@ -13,6 +13,8 @@ import {
   MOBILE_PRIMARY_NAV_ITEMS,
 } from '../features/navigation/navigationItems'
 import { useBackendHealth } from '../features/backend-status/useBackendHealth'
+import { useServerSettings } from '../features/settings/hooks/useServerSettings'
+import { SettingsPage } from './SettingsPage'
 
 type MobileAreaBlockProps = {
   label: string
@@ -29,8 +31,50 @@ function MobileAreaBlock({ label, className }: MobileAreaBlockProps) {
   )
 }
 
+function getIsDesktopViewport() {
+  if (typeof window === 'undefined') {
+    return true
+  }
+
+  return window.innerWidth >= 768
+}
+
+function useIsDesktopViewport() {
+  const [isDesktopViewport, setIsDesktopViewport] = useState(getIsDesktopViewport)
+
+  useEffect(() => {
+    const syncViewport = () => {
+      setIsDesktopViewport(getIsDesktopViewport())
+    }
+
+    window.addEventListener('resize', syncViewport)
+
+    return () => {
+      window.removeEventListener('resize', syncViewport)
+    }
+  }, [])
+
+  return isDesktopViewport
+}
+
+function MobileMarketChartPage() {
+  const { settings, loading } = useServerSettings()
+
+  if (loading && settings === null) {
+    return (
+      <MobileAreaBlock
+        label="시세 설정을 불러오는 중이에요."
+        className="min-h-0 flex-1 bg-white text-slate-500"
+      />
+    )
+  }
+
+  return <MarketChartMobileListLayout settings={settings} />
+}
+
 export function HomePage() {
   const [isMoreOpen, setIsMoreOpen] = useState(false)
+  const isDesktopViewport = useIsDesktopViewport()
   const { status, target } = useBackendHealth()
   const location = useLocation()
   const matches = useMatches()
@@ -44,6 +88,9 @@ export function HomePage() {
     (activeRouteMatch?.handle as { menuLabel?: string } | undefined)?.menuLabel ??
     '대시보드'
   const isMobileMarketChartListRoute = location.pathname === '/market-chart'
+  const isMobileSettingsRoute = location.pathname === '/settings'
+  const shouldRenderDesktopRouteContent =
+    (!isMobileMarketChartListRoute && !isMobileSettingsRoute) || isDesktopViewport
 
   return (
     <main className="min-h-screen bg-slate-100">
@@ -57,7 +104,7 @@ export function HomePage() {
             <BackendStatusCard status={status} target={target} />
           </aside>
 
-          <Outlet />
+          {shouldRenderDesktopRouteContent ? <Outlet /> : null}
         </div>
       </section>
 
@@ -69,7 +116,23 @@ export function HomePage() {
           <BackendStatusDot status={status} />
         </div>
         {isMobileMarketChartListRoute ? (
-          <MarketChartMobileListLayout />
+          isDesktopViewport ? (
+            <MobileAreaBlock
+              label={`콘텐츠 영역 - ${activeMenuLabel}`}
+              className="min-h-0 flex-1 bg-sky-200 text-sky-900"
+            />
+          ) : (
+            <MobileMarketChartPage />
+          )
+        ) : isMobileSettingsRoute ? (
+          isDesktopViewport ? (
+            <MobileAreaBlock
+              label={`콘텐츠 영역 - ${activeMenuLabel}`}
+              className="min-h-0 flex-1 bg-sky-200 text-sky-900"
+            />
+          ) : (
+            <SettingsPage variant="mobile" />
+          )
         ) : (
           <MobileAreaBlock
             label={`콘텐츠 영역 - ${activeMenuLabel}`}

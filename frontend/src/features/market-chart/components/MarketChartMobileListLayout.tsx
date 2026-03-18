@@ -1,28 +1,42 @@
-import { useState } from 'react'
-
+import {
+  type MarketChartSettingsDocument,
+  useMarketChartDefaults,
+} from '../hooks/useMarketChartDefaults'
 import { useMarketList } from '../hooks/useMarketList'
 import {
-  DEFAULT_MARKET_LIST_SORT,
-  type MarketListExchange,
-  type MarketListQuote,
-  getDefaultQuoteForExchange,
+  DEFAULT_MARKET_LIST_PAGE_SIZE,
   getSupportedQuotes,
-  isQuoteSupported,
 } from '../marketList.types'
 import { MarketChartExchangeSelector } from './MarketChartExchangeSelector'
 import { MarketChartMarketListPanel } from './MarketChartMarketListPanel'
 
-export function MarketChartMobileListLayout() {
-  const [activeExchange, setActiveExchange] = useState<MarketListExchange>('upbit')
-  const [activeQuote, setActiveQuote] = useState<MarketListQuote>('KRW')
-  const [sortState, setSortState] = useState(DEFAULT_MARKET_LIST_SORT)
+export function MarketChartMobileListLayout({
+  settings = null,
+}: {
+  settings?: MarketChartSettingsDocument
+}) {
+  const {
+    activeExchange,
+    activeQuote,
+    enabledExchanges,
+    sortState,
+    pageSize,
+    setActiveExchange,
+    setActiveQuote,
+    setSortState,
+    pollIntervalMs,
+    autoRefreshEnabled,
+  } = useMarketChartDefaults(settings)
   const supportedQuotes = getSupportedQuotes(activeExchange)
   const { items, hasMore, loading, loadingMore, error, loadMore, refetch } =
     useMarketList({
       exchange: activeExchange,
       quote: activeQuote,
+      limit: pageSize !== DEFAULT_MARKET_LIST_PAGE_SIZE ? pageSize : undefined,
       orderBy: sortState.orderBy,
       orderDir: sortState.orderDir,
+      pollIntervalMs,
+      autoRefreshEnabled,
     })
 
   return (
@@ -33,13 +47,10 @@ export function MarketChartMobileListLayout() {
       <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
         <MarketChartExchangeSelector
           activeExchange={activeExchange}
+          exchanges={enabledExchanges}
           isLoading={loading}
           onExchangeChange={(exchange) => {
             setActiveExchange(exchange)
-
-            if (!isQuoteSupported(exchange, activeQuote)) {
-              setActiveQuote(getDefaultQuoteForExchange(exchange))
-            }
           }}
         />
       </section>

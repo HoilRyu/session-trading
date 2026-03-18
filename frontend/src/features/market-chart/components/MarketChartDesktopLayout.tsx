@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 
+import {
+  type MarketChartSettingsDocument,
+  useMarketChartDefaults,
+} from '../hooks/useMarketChartDefaults'
 import { getDefaultSelectedMarketId, useMarketList } from '../hooks/useMarketList'
 import {
-  DEFAULT_MARKET_LIST_SORT,
+  DEFAULT_MARKET_LIST_PAGE_SIZE,
   type MarketChartMarketListItem,
   type MarketListExchange,
-  type MarketListQuote,
-  getDefaultQuoteForExchange,
   getExchangeDisplayName,
   getSupportedQuotes,
-  isQuoteSupported,
 } from '../marketList.types'
 import {
   DEFAULT_TRADING_VIEW_SYMBOL,
@@ -46,9 +47,10 @@ function getDefaultTradingViewSymbol(exchange: MarketListExchange) {
 
 function getTradingViewSymbol(
   item: MarketChartMarketListItem | null,
+  defaultChartSymbol: string,
   exchange: MarketListExchange,
 ) {
-  return item?.chartSymbol ?? getDefaultTradingViewSymbol(exchange)
+  return item?.chartSymbol ?? defaultChartSymbol ?? getDefaultTradingViewSymbol(exchange)
 }
 
 function getDisplayName(item: MarketChartMarketListItem | null) {
@@ -59,10 +61,44 @@ function getDisplayName(item: MarketChartMarketListItem | null) {
   return item.displayNameKo ?? item.displayNameEn ?? item.baseAsset
 }
 
-function getSelectedMarketSummary(item: MarketChartMarketListItem | null) {
+function getFallbackPair({
+  defaultChartSymbol,
+  exchange,
+}: {
+  defaultChartSymbol: string
+  exchange: MarketListExchange
+}) {
+  const normalizedSymbol = defaultChartSymbol.includes(':')
+    ? defaultChartSymbol.split(':', 2)[1] ?? ''
+    : defaultChartSymbol
+  const supportedQuotes = getSupportedQuotes(exchange)
+
+  for (const quoteAsset of supportedQuotes) {
+    if (
+      normalizedSymbol.endsWith(quoteAsset) &&
+      normalizedSymbol.length > quoteAsset.length
+    ) {
+      return `${normalizedSymbol.slice(0, -quoteAsset.length)}/${quoteAsset}`
+    }
+  }
+
+  const fallbackQuote = supportedQuotes[0] ?? 'KRW'
+
+  return `BTC/${fallbackQuote}`
+}
+
+function getSelectedMarketSummary({
+  item,
+  defaultChartSymbol,
+  exchange,
+}: {
+  item: MarketChartMarketListItem | null
+  defaultChartSymbol: string
+  exchange: MarketListExchange
+}) {
   if (!item) {
     return {
-      pair: 'BTC/KRW',
+      pair: getFallbackPair({ defaultChartSymbol, exchange }),
       tradePrice: '-',
       changeRate: '-',
       volumeText: '-',
@@ -77,11 +113,28 @@ function getSelectedMarketSummary(item: MarketChartMarketListItem | null) {
   }
 }
 
-export function MarketChartDesktopLayout() {
-  const [activeExchange, setActiveExchange] = useState<MarketListExchange>('upbit')
-  const [activeQuote, setActiveQuote] = useState<MarketListQuote>('KRW')
-  const [sortState, setSortState] = useState(DEFAULT_MARKET_LIST_SORT)
+export function MarketChartDesktopLayout({
+  settings = null,
+}: {
+  settings?: MarketChartSettingsDocument
+}) {
   const [selectedMarketId, setSelectedMarketId] = useState<number | null>(null)
+  const {
+    activeExchange,
+    activeQuote,
+    enabledExchanges,
+    sortState,
+    pageSize,
+    setActiveExchange,
+    setActiveQuote,
+    setSortState,
+    pollIntervalMs,
+    autoRefreshEnabled,
+    chartInterval,
+    chartTheme,
+    showVolume,
+    defaultChartSymbol,
+  } = useMarketChartDefaults(settings)
   const supportedQuotes = useMemo(() => {
     return getSupportedQuotes(activeExchange)
   }, [activeExchange])
@@ -89,8 +142,11 @@ export function MarketChartDesktopLayout() {
     useMarketList({
       exchange: activeExchange,
       quote: activeQuote,
+      limit: pageSize !== DEFAULT_MARKET_LIST_PAGE_SIZE ? pageSize : undefined,
       orderBy: sortState.orderBy,
       orderDir: sortState.orderDir,
+      pollIntervalMs,
+      autoRefreshEnabled,
     })
   const selectedMarket = useMemo(() => {
     if (selectedMarketId === null) {
@@ -104,8 +160,12 @@ export function MarketChartDesktopLayout() {
     )
   }, [items, selectedMarketId])
   const summary = useMemo(() => {
-    return getSelectedMarketSummary(selectedMarket)
-  }, [selectedMarket])
+    return getSelectedMarketSummary({
+      item: selectedMarket,
+      defaultChartSymbol,
+      exchange: activeExchange,
+    })
+  }, [activeExchange, defaultChartSymbol, selectedMarket])
 
   useEffect(() => {
     if (items.length === 0) {
@@ -123,16 +183,17 @@ export function MarketChartDesktopLayout() {
       return
     }
 
-    setSelectedMarketId(getDefaultSelectedMarketId(items))
-  }, [items, selectedMarketId])
+    const defaultConfiguredMarket = items.find((item) => {
+      return item.chartSymbol === defaultChartSymbol
+    })
 
-  useEffect(() => {
-    if (isQuoteSupported(activeExchange, activeQuote)) {
+    if (defaultConfiguredMarket) {
+      setSelectedMarketId(defaultConfiguredMarket.marketListingId)
       return
     }
 
-    setActiveQuote(getDefaultQuoteForExchange(activeExchange))
-  }, [activeExchange, activeQuote])
+    setSelectedMarketId(getDefaultSelectedMarketId(items))
+  }, [defaultChartSymbol, items, selectedMarketId])
 
   return (
     <div
@@ -156,14 +217,11 @@ export function MarketChartDesktopLayout() {
             <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
               <MarketChartExchangeSelector
                 activeExchange={activeExchange}
+                exchanges={enabledExchanges}
                 isLoading={loading}
                 onExchangeChange={(exchange) => {
                   setActiveExchange(exchange)
                   setSelectedMarketId(null)
-
-                  if (!isQuoteSupported(exchange, activeQuote)) {
-                    setActiveQuote(getDefaultQuoteForExchange(exchange))
-                  }
                 }}
               />
 
@@ -208,7 +266,14 @@ export function MarketChartDesktopLayout() {
           </section>
           <div className="min-h-0 flex-1">
             <TradingViewAdvancedChart
-              symbol={getTradingViewSymbol(selectedMarket, activeExchange)}
+              symbol={getTradingViewSymbol(
+                selectedMarket,
+                defaultChartSymbol,
+                activeExchange,
+              )}
+              interval={chartInterval}
+              theme={chartTheme}
+              showVolume={showVolume}
             />
           </div>
         </div>

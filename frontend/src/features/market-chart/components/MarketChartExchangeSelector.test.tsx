@@ -42,4 +42,18 @@ describe('MarketChartExchangeSelector', () => {
 
     expect(handleExchangeChange).toHaveBeenCalledWith('binance')
   })
+
+  it('활성화된 거래소만 렌더링한다', () => {
+    render(
+      <MarketChartExchangeSelector
+        activeExchange="binance"
+        exchanges={['binance']}
+        onExchangeChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('tab', { name: '바이낸스' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: '업비트' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: '빗썸' })).not.toBeInTheDocument()
+  })
 })

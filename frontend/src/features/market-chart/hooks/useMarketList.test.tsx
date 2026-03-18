@@ -494,6 +494,85 @@ describe('useMarketList', () => {
     expect(result.current.error).toBeNull()
     expect(result.current.loading).toBe(false)
   })
+
+  it('autoRefreshEnabled가 false면 주기 재조회를 멈춘다', async () => {
+    vi.useFakeTimers()
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () =>
+        createMarketListResponse({
+          start: 0,
+          total: 50,
+          quote: 'KRW',
+          count: 50,
+        }),
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result } = renderHook(() =>
+      useMarketList({
+        quote: 'KRW',
+        autoRefreshEnabled: false,
+      }),
+    )
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(result.current.loading).toBe(false)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000)
+    })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('pollIntervalMs를 설정값으로 사용해 재조회 시점을 늦춘다', async () => {
+    vi.useFakeTimers()
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () =>
+        createMarketListResponse({
+          start: 0,
+          total: 50,
+          quote: 'KRW',
+          count: 50,
+        }),
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result } = renderHook(() =>
+      useMarketList({
+        quote: 'KRW',
+        pollIntervalMs: 2000,
+      }),
+    )
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(result.current.loading).toBe(false)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1999)
+    })
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+      await Promise.resolve()
+    })
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('getDefaultSelectedMarketId', () => {

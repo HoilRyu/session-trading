@@ -49,6 +49,8 @@ describe('MarketChartMobileListLayout', () => {
       quote: 'KRW',
       orderBy: 'name',
       orderDir: 'asc',
+      pollIntervalMs: 1000,
+      autoRefreshEnabled: true,
     })
 
     expect(screen.getByRole('tab', { name: '업비트' })).toHaveAttribute(
@@ -112,6 +114,8 @@ describe('MarketChartMobileListLayout', () => {
       quote: 'KRW',
       orderBy: 'name',
       orderDir: 'asc',
+      pollIntervalMs: 1000,
+      autoRefreshEnabled: true,
     })
     expect(screen.getByRole('tab', { name: 'USDT' })).toBeDisabled()
   })
@@ -148,6 +152,8 @@ describe('MarketChartMobileListLayout', () => {
       quote: 'USDT',
       orderBy: 'name',
       orderDir: 'asc',
+      pollIntervalMs: 1000,
+      autoRefreshEnabled: true,
     })
 
     fireEvent.click(screen.getByRole('tab', { name: '빗썸' }))
@@ -157,6 +163,8 @@ describe('MarketChartMobileListLayout', () => {
       quote: 'KRW',
       orderBy: 'name',
       orderDir: 'asc',
+      pollIntervalMs: 1000,
+      autoRefreshEnabled: true,
     })
   })
 
@@ -206,11 +214,74 @@ describe('MarketChartMobileListLayout', () => {
       quote: 'USDT',
       orderBy: 'name',
       orderDir: 'asc',
+      pollIntervalMs: 1000,
+      autoRefreshEnabled: true,
     })
     expect(screen.getByRole('tab', { name: '원화' })).toBeDisabled()
     expect(screen.getByRole('tab', { name: 'USDT' })).toHaveAttribute(
       'aria-selected',
       'true',
     )
+  })
+
+  it('settings 기본값으로 모바일 목록 조회 옵션을 초기화한다', () => {
+    useMarketListMock.mockReturnValue({
+      items: [
+        {
+          marketListingId: 7,
+          chartSymbol: 'BINANCE:BTCUSDT',
+          baseAsset: 'BTC',
+          quoteAsset: 'USDT',
+          displayNameEn: 'Bitcoin',
+          tradePrice: '74,057.4',
+          changeRate: '+0.18%',
+          volumeText: '1,306,763,722.01',
+        },
+      ],
+      total: 1,
+      hasMore: false,
+      loading: false,
+      loadingMore: false,
+      refreshing: false,
+      error: null,
+      loadMore: vi.fn(),
+      refetch: vi.fn(),
+    })
+
+    render(
+      <MarketChartMobileListLayout
+        settings={{
+          general: {
+            default_exchange: 'binance',
+          },
+          market_data: {
+            default_quote: 'BTC',
+            default_order_by: 'trade_amount_24h',
+            default_order_dir: 'desc',
+            poll_interval_ms: 2500,
+            auto_refresh_enabled: false,
+            page_size: 20,
+            exchanges: {
+              upbit: { enabled: false },
+              bithumb: { enabled: false },
+              binance: { enabled: true },
+            },
+          },
+        }}
+      />,
+    )
+
+    expect(useMarketListMock).toHaveBeenLastCalledWith({
+      exchange: 'binance',
+      quote: 'BTC',
+      limit: 20,
+      orderBy: 'trade_amount_24h',
+      orderDir: 'desc',
+      pollIntervalMs: 2500,
+      autoRefreshEnabled: false,
+    })
+    expect(screen.getByRole('tab', { name: '바이낸스' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: '업비트' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: '빗썸' })).not.toBeInTheDocument()
   })
 })

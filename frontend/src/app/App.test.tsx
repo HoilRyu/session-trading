@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
-import { afterEach, vi } from 'vitest'
+import { afterEach, beforeEach, vi } from 'vitest'
 
 import { routes } from './router'
 
@@ -18,11 +18,54 @@ function createFetchMock({
   healthOk = true,
   marketOk = true,
   marketItems = [],
+  settingsOk = true,
+  runtimeOk = true,
+  settingsDocument = null,
 }: {
   healthOk?: boolean
   marketOk?: boolean
   marketItems?: Array<Record<string, unknown>>
+  settingsOk?: boolean
+  runtimeOk?: boolean
+  settingsDocument?: Record<string, unknown> | null
 } = {}) {
+  const effectiveSettingsDocument =
+    settingsDocument ?? {
+      general: {
+        default_exchange: 'upbit',
+        default_route: '/market-chart',
+      },
+      market_data: {
+        default_quote: 'KRW',
+        default_order_by: 'trade_amount_24h',
+        default_order_dir: 'desc',
+        poll_interval_ms: 1000,
+        auto_refresh_enabled: true,
+        page_size: 50,
+        exchanges: {
+          upbit: { enabled: true },
+          bithumb: { enabled: true },
+          binance: { enabled: true },
+        },
+      },
+      chart: {
+        default_exchange: 'upbit',
+        default_symbol: 'KRW-BTC',
+        default_interval: '60',
+        theme: 'light',
+        show_volume: true,
+        price_format_mode: 'auto',
+      },
+      ops: {
+        market_sync_on_boot: false,
+        exchanges: {
+          upbit: { auto_start: false, ticker_enabled: true },
+          bithumb: { auto_start: false, ticker_enabled: true },
+          binance: { auto_start: false, ticker_enabled: true },
+        },
+      },
+    }
+
   return vi.fn().mockImplementation(async (input: string) => {
     if (input.endsWith('/health')) {
       return { ok: healthOk }
@@ -39,6 +82,58 @@ function createFetchMock({
       }
     }
 
+    if (input.endsWith('/api/v1/settings')) {
+      if (!settingsOk) {
+        return { ok: false }
+      }
+
+      return {
+        ok: true,
+        json: async () => effectiveSettingsDocument,
+      }
+    }
+
+    if (input.endsWith('/api/v1/settings/runtime')) {
+      if (!runtimeOk) {
+        return { ok: false }
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          environment: 'local',
+          backend_status: healthOk ? 'online' : 'offline',
+          target: '127.0.0.1:8000',
+          exchanges: {
+            upbit: {
+              status: 'running',
+              subscribed_market_count: 3,
+              buffered_event_count: 1,
+              last_error: null,
+              last_received_at: '2026-03-18T04:00:00Z',
+              last_flushed_at: '2026-03-18T04:00:00Z',
+            },
+            bithumb: {
+              status: 'stopped',
+              subscribed_market_count: 0,
+              buffered_event_count: 0,
+              last_error: 'not started',
+              last_received_at: null,
+              last_flushed_at: null,
+            },
+            binance: {
+              status: 'running',
+              subscribed_market_count: 3,
+              buffered_event_count: 1,
+              last_error: null,
+              last_received_at: '2026-03-18T04:00:00Z',
+              last_flushed_at: '2026-03-18T04:00:00Z',
+            },
+          },
+        }),
+      }
+    }
+
     return { ok: true, json: async () => ({}) }
   })
 }
@@ -48,6 +143,19 @@ function renderWithRoute(initialEntries: string[]) {
 
   return render(<RouterProvider router={router} />)
 }
+
+function setViewportWidth(width: number) {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: width,
+  })
+  window.dispatchEvent(new Event('resize'))
+}
+
+beforeEach(() => {
+  setViewportWidth(1280)
+})
 
 afterEach(() => {
   vi.useRealTimers()
@@ -178,6 +286,97 @@ describe('App routing', () => {
     expect(within(desktopSection).getByText('BTC/KRW')).toBeInTheDocument()
   })
 
+  it('applies saved settings to the desktop market chart route', async () => {
+    const fetchMock = createFetchMock({
+      settingsDocument: {
+        general: {
+          default_exchange: 'binance',
+          default_route: '/market-chart',
+        },
+        market_data: {
+          default_quote: 'BTC',
+          default_order_by: 'trade_amount_24h',
+          default_order_dir: 'desc',
+          poll_interval_ms: 1500,
+          auto_refresh_enabled: false,
+          page_size: 50,
+          exchanges: {
+            upbit: { enabled: true },
+            bithumb: { enabled: true },
+            binance: { enabled: true },
+          },
+        },
+        chart: {
+          default_exchange: 'binance',
+          default_symbol: 'BTCUSDT',
+          default_interval: '240',
+          theme: 'dark',
+          show_volume: false,
+          price_format_mode: 'auto',
+        },
+        ops: {
+          market_sync_on_boot: false,
+          exchanges: {
+            upbit: { auto_start: false, ticker_enabled: true },
+            bithumb: { auto_start: false, ticker_enabled: true },
+            binance: { auto_start: false, ticker_enabled: true },
+          },
+        },
+      },
+      marketItems: [
+        {
+          market_listing_id: 7,
+          exchange: 'binance',
+          raw_symbol: 'ETHBTC',
+          base_asset: 'ETH',
+          quote_asset: 'BTC',
+          display_name_ko: '이더리움',
+          display_name_en: 'Ethereum',
+          has_warning: false,
+          trade_price: '0.05230000',
+          signed_change_rate: '0.0123',
+          acc_trade_volume_24h: '1111.11110000',
+          acc_trade_price_24h: '4321.12340000',
+          event_time: null,
+        },
+      ],
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderWithRoute(['/market-chart'])
+
+    const desktopSection = (await screen.findByText('상단 영역 - 시세 / 차트')).closest(
+      'section',
+    ) as HTMLElement
+
+    await waitFor(() => {
+      expect(
+        within(desktopSection).getByRole('tab', { name: '바이낸스' }),
+      ).toHaveAttribute('aria-selected', 'true')
+      expect(within(desktopSection).getByRole('tab', { name: 'BTC' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      )
+    })
+
+    const marketRequests = fetchMock.mock.calls
+      .map(([input]) => String(input))
+      .filter((input) => input.includes('/api/v1/markets'))
+    const settingsRequests = fetchMock.mock.calls
+      .map(([input]) => String(input))
+      .filter((input) => input.endsWith('/api/v1/settings'))
+
+    expect(settingsRequests).toHaveLength(1)
+    expect(marketRequests).toHaveLength(1)
+    marketRequests.forEach((requestUrl) => {
+      expect(requestUrl).toContain('exchange=binance')
+      expect(requestUrl).toContain('quote=BTC')
+      expect(requestUrl).toContain('order_by=trade_amount_24h')
+      expect(requestUrl).toContain('order_dir=desc')
+      expect(requestUrl).toContain('limit=50')
+    })
+  })
+
   it('changes the mobile content area when a bottom tab is clicked', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true })
     vi.stubGlobal('fetch', fetchMock)
@@ -196,6 +395,8 @@ describe('App routing', () => {
   })
 
   it('renders the market list area on mobile for the market chart route', async () => {
+    setViewportWidth(375)
+
     const fetchMock = createFetchMock({
       marketItems: [
         {
@@ -226,6 +427,94 @@ describe('App routing', () => {
     expect(
       within(mobileSection).queryByText('콘텐츠 영역 - 시세 / 차트'),
     ).not.toBeInTheDocument()
+  })
+
+  it('applies saved settings to the mobile market chart route', async () => {
+    setViewportWidth(375)
+
+    const fetchMock = createFetchMock({
+      settingsDocument: {
+        general: {
+          default_exchange: 'binance',
+          default_route: '/market-chart',
+        },
+        market_data: {
+          default_quote: 'BTC',
+          default_order_by: 'trade_amount_24h',
+          default_order_dir: 'desc',
+          poll_interval_ms: 2000,
+          auto_refresh_enabled: false,
+          page_size: 50,
+          exchanges: {
+            upbit: { enabled: true },
+            bithumb: { enabled: true },
+            binance: { enabled: true },
+          },
+        },
+        chart: {
+          default_exchange: 'binance',
+          default_symbol: 'BTCUSDT',
+          default_interval: '60',
+          theme: 'light',
+          show_volume: true,
+          price_format_mode: 'auto',
+        },
+        ops: {
+          market_sync_on_boot: false,
+          exchanges: {
+            upbit: { auto_start: false, ticker_enabled: true },
+            bithumb: { auto_start: false, ticker_enabled: true },
+            binance: { auto_start: false, ticker_enabled: true },
+          },
+        },
+      },
+      marketItems: [
+        {
+          market_listing_id: 11,
+          exchange: 'binance',
+          raw_symbol: 'SOLBTC',
+          base_asset: 'SOL',
+          quote_asset: 'BTC',
+          display_name_ko: '솔라나',
+          display_name_en: 'Solana',
+          has_warning: false,
+          trade_price: '0.00123000',
+          signed_change_rate: '-0.0201',
+          acc_trade_volume_24h: '8888.00000000',
+          acc_trade_price_24h: '456.78000000',
+          event_time: null,
+        },
+      ],
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderWithRoute(['/market-chart'])
+
+    const mobileSection = (await screen.findByText('상단 앱바 영역 - 시세 / 차트')).closest(
+      'section',
+    ) as HTMLElement
+
+    await waitFor(() =>
+      expect(
+        within(mobileSection).getByRole('tab', { name: '바이낸스' }),
+      ).toHaveAttribute('aria-selected', 'true'),
+    )
+    await waitFor(() =>
+      expect(within(mobileSection).getByRole('tab', { name: 'BTC' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      ),
+    )
+
+    const marketRequests = fetchMock.mock.calls
+      .map(([input]) => String(input))
+      .filter((input) => input.includes('/api/v1/markets'))
+    const settingsRequests = fetchMock.mock.calls
+      .map(([input]) => String(input))
+      .filter((input) => input.endsWith('/api/v1/settings'))
+
+    expect(settingsRequests).toHaveLength(1)
+    expect(marketRequests).toHaveLength(1)
   })
 
   it('opens the more panel and shows backend status details on mobile', async () => {
@@ -278,7 +567,9 @@ describe('App routing', () => {
   })
 
   it('navigates to the settings page when the settings item in more is clicked', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    setViewportWidth(375)
+
+    const fetchMock = createFetchMock()
     vi.stubGlobal('fetch', fetchMock)
 
     renderWithRoute(['/dashboard'])
@@ -292,7 +583,91 @@ describe('App routing', () => {
     )
 
     expect(await screen.findByText('상단 앱바 영역 - 설정')).toBeInTheDocument()
+    expect(await screen.findAllByText('일반')).not.toHaveLength(0)
+    expect(screen.getAllByText('마켓 데이터')).not.toHaveLength(0)
+    expect(screen.getAllByText('차트')).not.toHaveLength(0)
+    expect(screen.getAllByText('운영 제어')).not.toHaveLength(0)
+    expect(screen.getAllByText('진단')).not.toHaveLength(0)
     expect(screen.queryByText('더보기 패널')).not.toBeInTheDocument()
+
+    const settingsRequests = fetchMock.mock.calls
+      .map(([input]) => String(input))
+      .filter((input) => input.endsWith('/api/v1/settings'))
+    const runtimeRequests = fetchMock.mock.calls
+      .map(([input]) => String(input))
+      .filter((input) => input.endsWith('/api/v1/settings/runtime'))
+
+    expect(settingsRequests).toHaveLength(1)
+    expect(runtimeRequests).toHaveLength(1)
+  })
+
+  it('renders the settings cards on desktop route', async () => {
+    const fetchMock = createFetchMock()
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderWithRoute(['/settings'])
+
+    expect(await screen.findByRole('heading', { name: '설정' })).toBeInTheDocument()
+    expect(screen.getAllByText('일반')).not.toHaveLength(0)
+    expect(screen.getAllByText('마켓 데이터')).not.toHaveLength(0)
+    expect(screen.getAllByText('차트')).not.toHaveLength(0)
+    expect(screen.getAllByText('운영 제어')).not.toHaveLength(0)
+    expect(screen.getAllByText('진단')).not.toHaveLength(0)
+
+    const settingsRequests = fetchMock.mock.calls
+      .map(([input]) => String(input))
+      .filter((input) => input.endsWith('/api/v1/settings'))
+    const runtimeRequests = fetchMock.mock.calls
+      .map(([input]) => String(input))
+      .filter((input) => input.endsWith('/api/v1/settings/runtime'))
+
+    expect(settingsRequests).toHaveLength(1)
+    expect(runtimeRequests).toHaveLength(1)
+  })
+
+  it('redirects the root route to the saved default route', async () => {
+    const fetchMock = createFetchMock({
+      settingsDocument: {
+        general: {
+          default_exchange: 'upbit',
+          default_route: '/settings',
+        },
+        market_data: {
+          default_quote: 'KRW',
+          default_order_by: 'trade_amount_24h',
+          default_order_dir: 'desc',
+          poll_interval_ms: 1000,
+          auto_refresh_enabled: true,
+          page_size: 50,
+          exchanges: {
+            upbit: { enabled: true },
+            bithumb: { enabled: true },
+            binance: { enabled: true },
+          },
+        },
+        chart: {
+          default_exchange: 'upbit',
+          default_symbol: 'KRW-BTC',
+          default_interval: '60',
+          theme: 'light',
+          show_volume: true,
+          price_format_mode: 'auto',
+        },
+        ops: {
+          market_sync_on_boot: false,
+          exchanges: {
+            upbit: { auto_start: false, ticker_enabled: true },
+            bithumb: { auto_start: false, ticker_enabled: true },
+            binance: { auto_start: false, ticker_enabled: true },
+          },
+        },
+      },
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderWithRoute(['/'])
+
+    expect(await screen.findByRole('heading', { name: '설정' })).toBeInTheDocument()
   })
 
   it('renders the not found page on unknown route', async () => {
