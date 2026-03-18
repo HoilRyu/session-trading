@@ -7,6 +7,9 @@ describe('InvestmentStatusDesktopLayout', () => {
     render(<InvestmentStatusDesktopLayout />)
 
     expect(screen.getByTestId('investment-status-desktop-layout')).toBeInTheDocument()
+    expect(screen.getByTestId('investment-status-lower-grid')).toHaveClass(
+      'lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.72fr)]',
+    )
     expect(screen.getByText('현재 실행 중 작업')).toBeInTheDocument()
     expect(screen.getAllByTestId('running-job-card')).toHaveLength(3)
     expect(screen.getByText('투자 방식')).toBeInTheDocument()
@@ -31,7 +34,7 @@ describe('InvestmentStatusDesktopLayout', () => {
     expect(within(detailPanel).getByText('단기 추세 진입 전략')).toBeInTheDocument()
   })
 
-  it('선택된 전략이 목록에서 사라지면 상세 패널을 빈 상태로 되돌린다', () => {
+  it('선택된 전략이 사라졌다가 다시 나타나도 다시 클릭하기 전까지는 선택이 복원되지 않는다', () => {
     const { rerender } = render(<InvestmentStatusDesktopLayout />)
     const detailPanel = screen.getByText('전략 상세').closest('aside') as HTMLElement
 
@@ -63,6 +66,16 @@ describe('InvestmentStatusDesktopLayout', () => {
     expect(screen.getAllByTestId('strategy-entry-card').every((button) => {
       return button.getAttribute('aria-pressed') !== 'true'
     })).toBe(true)
+
+    rerender(<InvestmentStatusDesktopLayout />)
+
+    expect(
+      within(detailPanel).getByText('전략 카드를 선택하면 상세가 표시됩니다'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /단기 모멘텀/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
   })
 
   it('작업 카드가 가로형 리스트 구조를 유지하고 작업이 없어도 상단 영역은 남는다', () => {
@@ -101,12 +114,12 @@ describe('InvestmentStatusDesktopLayout', () => {
 
     rerender(<InvestmentStatusDesktopLayout strategies={[strategyA]} />)
 
-    expect(screen.getByTestId('strategy-board-grid')).toHaveClass('xl:grid-cols-3')
+    expect(screen.getByTestId('strategy-board-grid')).toHaveClass('lg:grid-cols-3')
     expect(screen.getAllByTestId('strategy-entry-card')).toHaveLength(1)
 
     rerender(<InvestmentStatusDesktopLayout strategies={[strategyA, strategyB]} />)
 
-    expect(screen.getByTestId('strategy-board-grid')).toHaveClass('xl:grid-cols-3')
+    expect(screen.getByTestId('strategy-board-grid')).toHaveClass('lg:grid-cols-3')
     expect(screen.getAllByTestId('strategy-entry-card')).toHaveLength(2)
   })
 })
