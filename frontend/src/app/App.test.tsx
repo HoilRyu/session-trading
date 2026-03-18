@@ -154,9 +154,12 @@ describe('App routing', () => {
     const desktopHeading = await screen.findByText('상단 영역 - 시세 / 차트')
     const desktopSection = desktopHeading.closest('section') as HTMLElement
 
-    expect(
-      within(desktopSection).getByText('거래소 선택 + 현재가/요약 정보 영역'),
-    ).toBeInTheDocument()
+    expect(within(desktopSection).getByRole('tab', { name: '업비트' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(within(desktopSection).getByRole('tab', { name: '빗썸' })).toBeInTheDocument()
+    expect(within(desktopSection).getByRole('tab', { name: '바이낸스' })).toBeInTheDocument()
     expect(
       within(desktopSection).getByTestId('tradingview-chart-container'),
     ).toBeInTheDocument()
@@ -168,9 +171,9 @@ describe('App routing', () => {
       within(desktopSection).getByRole('tab', { name: 'USDT' }),
     ).toBeInTheDocument()
     expect(within(desktopSection).getByText('종목명')).toBeInTheDocument()
-    expect(within(desktopSection).getByText('현재가')).toBeInTheDocument()
-    expect(within(desktopSection).getByText('전일대비')).toBeInTheDocument()
-    expect(within(desktopSection).getByText('거래대금')).toBeInTheDocument()
+    expect(within(desktopSection).getAllByText('현재가').length).toBeGreaterThan(0)
+    expect(within(desktopSection).getAllByText('전일대비').length).toBeGreaterThan(0)
+    expect(within(desktopSection).getAllByText('거래대금').length).toBeGreaterThan(0)
     expect(await within(desktopSection).findByText('비트코인')).toBeInTheDocument()
     expect(within(desktopSection).getByText('BTC/KRW')).toBeInTheDocument()
   })

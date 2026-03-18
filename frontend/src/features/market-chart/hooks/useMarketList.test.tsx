@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
 
-import type { MarketListQuote } from '../marketList.types'
+import type { MarketListExchange, MarketListQuote } from '../marketList.types'
 import { getDefaultSelectedMarketId, useMarketList } from './useMarketList'
 
 type MarketListApiItem = {
@@ -16,6 +16,7 @@ type MarketListApiItem = {
   trade_price: string | null
   signed_change_rate: string | null
   acc_trade_volume_24h: string | null
+  acc_trade_price_24h: string | null
   event_time: string | null
 }
 
@@ -34,6 +35,7 @@ function createMarketItem(index: number, quote: string): MarketListApiItem {
     trade_price: `${1000 + index}.00000000`,
     signed_change_rate: '0.0100',
     acc_trade_volume_24h: `${50000 + index}.00000000`,
+    acc_trade_price_24h: `${70000000 + index}.00000000`,
     event_time: null,
   }
 }
@@ -68,6 +70,29 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+function createDeferredResponse() {
+  let resolve: ((value: {
+    ok: boolean
+    json: () => Promise<ReturnType<typeof createMarketListResponse>>
+  }) => void) | null = null
+  const promise = new Promise<{
+    ok: boolean
+    json: () => Promise<ReturnType<typeof createMarketListResponse>>
+  }>((nextResolve) => {
+    resolve = nextResolve
+  })
+
+  return {
+    promise,
+    resolve(value: ReturnType<typeof createMarketListResponse>) {
+      resolve?.({
+        ok: true,
+        json: async () => value,
+      })
+    },
+  }
+}
+
 describe('useMarketList', () => {
   it('초기 목록을 start=0, limit=50으로 조회한다', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
@@ -88,7 +113,7 @@ describe('useMarketList', () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://127.0.0.1:8000/api/v1/markets?exchange=upbit&quote=KRW&start=0&limit=50',
+      'http://127.0.0.1:8000/api/v1/markets?exchange=upbit&quote=KRW&order_by=name&order_dir=asc&start=0&limit=50',
     )
     expect(result.current.items).toHaveLength(50)
     expect(result.current.total).toBe(120)
@@ -133,7 +158,7 @@ describe('useMarketList', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
 
     expect(fetchMock).toHaveBeenLastCalledWith(
-      'http://127.0.0.1:8000/api/v1/markets?exchange=upbit&quote=KRW&start=50&limit=50',
+      'http://127.0.0.1:8000/api/v1/markets?exchange=upbit&quote=KRW&order_by=name&order_dir=asc&start=50&limit=50',
     )
     expect(result.current.items).toHaveLength(75)
     expect(result.current.hasMore).toBe(false)
@@ -186,11 +211,11 @@ describe('useMarketList', () => {
     })
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,
-      'http://127.0.0.1:8000/api/v1/markets?exchange=upbit&quote=KRW&start=0&limit=50',
+      'http://127.0.0.1:8000/api/v1/markets?exchange=upbit&quote=KRW&order_by=name&order_dir=asc&start=0&limit=50',
     )
     expect(fetchMock).toHaveBeenNthCalledWith(
       4,
-      'http://127.0.0.1:8000/api/v1/markets?exchange=upbit&quote=KRW&start=50&limit=50',
+      'http://127.0.0.1:8000/api/v1/markets?exchange=upbit&quote=KRW&order_by=name&order_dir=asc&start=50&limit=50',
     )
   })
 
@@ -239,11 +264,189 @@ describe('useMarketList', () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(fetchMock).toHaveBeenLastCalledWith(
-      'http://127.0.0.1:8000/api/v1/markets?exchange=upbit&quote=USDT&start=0&limit=50',
+      'http://127.0.0.1:8000/api/v1/markets?exchange=upbit&quote=USDT&order_by=name&order_dir=asc&start=0&limit=50',
     )
     expect(result.current.items).toHaveLength(30)
     expect(result.current.total).toBe(30)
     expect(result.current.hasMore).toBe(false)
+  })
+
+  it('정렬 조건이 바뀌면 order_by와 order_dir를 포함해 처음부터 다시 조회한다', async () => {
+    type SortProps = {
+      orderBy?: 'name' | 'price' | 'change_rate' | 'trade_amount_24h'
+      orderDir?: 'asc' | 'desc'
+    }
+    const fetchMock = vi.fn().mockImplementation(async (input: string) => {
+      if (input.includes('order_by=price') && input.includes('order_dir=desc')) {
+        return {
+          ok: true,
+          json: async () =>
+            createMarketListResponse({
+              start: 0,
+              total: 20,
+              quote: 'KRW',
+              count: 20,
+            }),
+        }
+      }
+
+      return {
+        ok: true,
+        json: async () =>
+          createMarketListResponse({
+            start: 0,
+            total: 50,
+            quote: 'KRW',
+            count: 50,
+          }),
+      }
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+    const initialProps: SortProps = {
+      orderBy: 'name',
+      orderDir: 'asc',
+    }
+
+    const { result, rerender } = renderHook(
+      ({ orderBy, orderDir }: SortProps) =>
+        useMarketList({
+          quote: 'KRW',
+          orderBy,
+          orderDir,
+        }),
+      {
+        initialProps,
+      },
+    )
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    rerender({
+      orderBy: 'price',
+      orderDir: 'desc',
+    })
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      'http://127.0.0.1:8000/api/v1/markets?exchange=upbit&quote=KRW&order_by=price&order_dir=desc&start=0&limit=50',
+    )
+    expect(result.current.items).toHaveLength(20)
+  })
+
+  it('exchange가 바뀌면 새 거래소 기준으로 처음부터 다시 조회한다', async () => {
+    type ExchangeProps = {
+      exchange: MarketListExchange
+    }
+    const fetchMock = vi.fn().mockImplementation(async (input: string) => {
+      if (input.includes('exchange=bithumb')) {
+        return {
+          ok: true,
+          json: async () =>
+            createMarketListResponse({
+              start: 0,
+              total: 16,
+              quote: 'BTC',
+              count: 16,
+            }),
+        }
+      }
+
+      return {
+        ok: true,
+        json: async () =>
+          createMarketListResponse({
+            start: 0,
+            total: 50,
+            quote: 'BTC',
+            count: 50,
+          }),
+      }
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result, rerender } = renderHook(
+      ({ exchange }: ExchangeProps) =>
+        useMarketList({
+          exchange,
+          quote: 'BTC',
+        }),
+      {
+        initialProps: {
+          exchange: 'upbit',
+        },
+      },
+    )
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    rerender({
+      exchange: 'bithumb',
+    })
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      'http://127.0.0.1:8000/api/v1/markets?exchange=bithumb&quote=BTC&order_by=name&order_dir=asc&start=0&limit=50',
+    )
+    expect(result.current.items).toHaveLength(16)
+  })
+
+  it('query가 바뀌는 동안에는 이전 거래소 목록을 비워 stale 선택을 막는다', async () => {
+    const deferred = createDeferredResponse()
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () =>
+          createMarketListResponse({
+            start: 0,
+            total: 50,
+            quote: 'KRW',
+            count: 50,
+          }),
+      })
+      .mockImplementationOnce(() => deferred.promise)
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result, rerender } = renderHook(
+      ({ exchange }: { exchange: MarketListExchange }) =>
+        useMarketList({
+          exchange,
+          quote: 'KRW',
+        }),
+      {
+        initialProps: {
+          exchange: 'upbit',
+        },
+      },
+    )
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.items).toHaveLength(50)
+
+    rerender({
+      exchange: 'bithumb',
+    })
+
+    await waitFor(() => expect(result.current.loading).toBe(true))
+    expect(result.current.items).toHaveLength(0)
+    expect(result.current.total).toBe(0)
+
+    deferred.resolve(
+      createMarketListResponse({
+        start: 0,
+        total: 16,
+        quote: 'KRW',
+        count: 16,
+      }),
+    )
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.items).toHaveLength(16)
   })
 
   it('요청 실패를 에러 상태로 노출한다', async () => {
@@ -257,6 +460,40 @@ describe('useMarketList', () => {
     expect(result.current.items).toHaveLength(0)
     expect(result.current.error).toBe('마켓 목록을 불러오지 못했어요.')
   })
+
+  it('초기 요청이 실패해도 1초 뒤 다시 조회해 회복한다', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('network error'))
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () =>
+          createMarketListResponse({
+            start: 0,
+            total: 50,
+            quote: 'KRW',
+            count: 50,
+          }),
+      })
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result } = renderHook(() => useMarketList({ quote: 'KRW' }))
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.items).toHaveLength(0)
+    expect(result.current.error).toBe('마켓 목록을 불러오지 못했어요.')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2), {
+      timeout: 2000,
+    })
+    await waitFor(() => expect(result.current.items).toHaveLength(50))
+
+    expect(result.current.error).toBeNull()
+    expect(result.current.loading).toBe(false)
+  })
 })
 
 describe('getDefaultSelectedMarketId', () => {
@@ -265,6 +502,7 @@ describe('getDefaultSelectedMarketId', () => {
       getDefaultSelectedMarketId([
         {
           marketListingId: 2,
+          chartSymbol: 'UPBIT:ETHKRW',
           baseAsset: 'ETH',
           quoteAsset: 'KRW',
           displayNameKo: '이더리움',
@@ -274,6 +512,7 @@ describe('getDefaultSelectedMarketId', () => {
         },
         {
           marketListingId: 1,
+          chartSymbol: 'UPBIT:BTCKRW',
           baseAsset: 'BTC',
           quoteAsset: 'KRW',
           displayNameKo: '비트코인',
@@ -287,7 +526,33 @@ describe('getDefaultSelectedMarketId', () => {
     expect(
       getDefaultSelectedMarketId([
         {
+          marketListingId: 4,
+          chartSymbol: 'BINANCE:SOLUSDT',
+          baseAsset: 'SOL',
+          quoteAsset: 'USDT',
+          displayNameEn: 'Solana',
+          tradePrice: '138.4',
+          changeRate: '-2.19%',
+          volumeText: '121,383,000',
+        },
+        {
+          marketListingId: 5,
+          chartSymbol: 'BINANCE:BTCUSDT',
+          baseAsset: 'BTC',
+          quoteAsset: 'USDT',
+          displayNameEn: 'Bitcoin',
+          tradePrice: '74,057.4',
+          changeRate: '+0.18%',
+          volumeText: '1,306,763,722.01',
+        },
+      ]),
+    ).toBe(5)
+
+    expect(
+      getDefaultSelectedMarketId([
+        {
           marketListingId: 3,
+          chartSymbol: 'BINANCE:SOLUSDT',
           baseAsset: 'SOL',
           quoteAsset: 'USDT',
           displayNameEn: 'Solana',

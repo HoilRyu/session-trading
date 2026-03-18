@@ -1,4 +1,9 @@
-import type { MarketListQuote } from '../marketList.types'
+import type {
+  MarketListExchange,
+  MarketListOrderBy,
+  MarketListOrderDir,
+  MarketListQuote,
+} from '../marketList.types'
 
 export type MarketListApiItem = {
   market_listing_id: number
@@ -12,6 +17,7 @@ export type MarketListApiItem = {
   trade_price: string | null
   signed_change_rate: string | null
   acc_trade_volume_24h: string | null
+  acc_trade_price_24h?: string | null
   event_time: string | null
 }
 
@@ -24,8 +30,10 @@ export type MarketListApiResponse = {
 }
 
 export type MarketListQueryParams = {
-  exchange?: string
+  exchange?: MarketListExchange
   quote?: MarketListQuote
   start?: number
   limit?: number
+  orderBy?: MarketListOrderBy
+  orderDir?: MarketListOrderDir
 }

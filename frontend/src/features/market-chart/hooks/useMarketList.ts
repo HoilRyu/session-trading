@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { getMarketsUrl } from '../../../config/backend'
-import type { MarketChartMarketListItem, MarketListQuote } from '../marketList.types'
+import type {
+  MarketChartMarketListItem,
+  MarketListExchange,
+  MarketListOrderBy,
+  MarketListOrderDir,
+  MarketListQuote,
+} from '../marketList.types'
 import { mapMarketListResponse } from '../api/marketListMapper'
 import type { MarketListApiResponse } from '../api/marketList.types'
 
@@ -9,9 +15,11 @@ const MARKET_LIST_PAGE_SIZE = 50
 const MARKET_LIST_REFRESH_INTERVAL_MS = 1000
 
 type UseMarketListOptions = {
-  exchange?: string
+  exchange?: MarketListExchange
   quote: MarketListQuote
   limit?: number
+  orderBy?: MarketListOrderBy
+  orderDir?: MarketListOrderDir
 }
 
 async function fetchMarketPage({
@@ -19,13 +27,19 @@ async function fetchMarketPage({
   quote,
   start,
   limit,
+  orderBy,
+  orderDir,
 }: {
-  exchange: string
+  exchange: MarketListExchange
   quote: MarketListQuote
   start: number
   limit: number
+  orderBy: MarketListOrderBy
+  orderDir: MarketListOrderDir
 }) {
-  const response = await fetch(getMarketsUrl({ exchange, quote, start, limit }))
+  const response = await fetch(
+    getMarketsUrl({ exchange, quote, orderBy, orderDir, start, limit }),
+  )
 
   if (!response.ok) {
     throw new Error('request failed')
@@ -35,18 +49,30 @@ async function fetchMarketPage({
 }
 
 function createRefreshStarts(loadedCount: number, pageSize: number) {
+  if (loadedCount === 0) {
+    return [0]
+  }
+
   return Array.from({ length: Math.ceil(loadedCount / pageSize) }, (_, index) => {
     return index * pageSize
   })
 }
 
 export function getDefaultSelectedMarketId(items: MarketChartMarketListItem[]) {
-  const btcKrwItem = items.find((item) => {
+  const preferredItem = items.find((item) => {
     return item.baseAsset === 'BTC' && item.quoteAsset === 'KRW'
   })
 
-  if (btcKrwItem) {
-    return btcKrwItem.marketListingId
+  if (preferredItem) {
+    return preferredItem.marketListingId
+  }
+
+  const btcUsdtItem = items.find((item) => {
+    return item.baseAsset === 'BTC' && item.quoteAsset === 'USDT'
+  })
+
+  if (btcUsdtItem) {
+    return btcUsdtItem.marketListingId
   }
 
   return items[0]?.marketListingId ?? null
@@ -56,6 +82,8 @@ export function useMarketList({
   exchange = 'upbit',
   quote,
   limit = MARKET_LIST_PAGE_SIZE,
+  orderBy = 'name',
+  orderDir = 'asc',
 }: UseMarketListOptions) {
   const [items, setItems] = useState<MarketChartMarketListItem[]>([])
   const [total, setTotal] = useState(0)
@@ -67,8 +95,8 @@ export function useMarketList({
   const queryKeyRef = useRef('')
 
   const queryKey = useMemo(() => {
-    return `${exchange}:${quote}:${retryKey}`
-  }, [exchange, quote, retryKey])
+    return `${exchange}:${quote}:${orderBy}:${orderDir}:${retryKey}`
+  }, [exchange, orderBy, orderDir, quote, retryKey])
 
   const hasMore = items.length < total
 
@@ -77,6 +105,8 @@ export function useMarketList({
     setLoading(true)
     setLoadingMore(false)
     setRefreshing(false)
+    setItems([])
+    setTotal(0)
     setError(null)
 
     try {
@@ -85,6 +115,8 @@ export function useMarketList({
         quote,
         start: 0,
         limit,
+        orderBy,
+        orderDir,
       })
 
       if (queryKeyRef.current !== queryKey) {
@@ -108,7 +140,7 @@ export function useMarketList({
 
       setLoading(false)
     }
-  }, [exchange, limit, queryKey, quote])
+  }, [exchange, limit, orderBy, orderDir, queryKey, quote])
 
   const loadMore = useCallback(async () => {
     if (loading || loadingMore || refreshing || !hasMore) {
@@ -126,6 +158,8 @@ export function useMarketList({
         quote,
         start: nextStart,
         limit,
+        orderBy,
+        orderDir,
       })
 
       if (queryKeyRef.current !== queryKey) {
@@ -149,14 +183,26 @@ export function useMarketList({
 
       setLoadingMore(false)
     }
-  }, [exchange, hasMore, items.length, limit, loading, loadingMore, queryKey, quote, refreshing])
+  }, [
+    exchange,
+    hasMore,
+    items.length,
+    limit,
+    loading,
+    loadingMore,
+    orderBy,
+    orderDir,
+    queryKey,
+    quote,
+    refreshing,
+  ])
 
   useEffect(() => {
     void loadInitialPage()
   }, [loadInitialPage])
 
   useEffect(() => {
-    if (loading || loadingMore || items.length === 0) {
+    if (loading || loadingMore) {
       return
     }
 
@@ -179,6 +225,8 @@ export function useMarketList({
                 quote,
                 start,
                 limit,
+                orderBy,
+                orderDir,
               }),
             ),
           )
@@ -212,7 +260,18 @@ export function useMarketList({
     return () => {
       window.clearInterval(intervalId)
     }
-  }, [exchange, items.length, limit, loading, loadingMore, queryKey, quote, refreshing])
+  }, [
+    exchange,
+    items.length,
+    limit,
+    loading,
+    loadingMore,
+    orderBy,
+    orderDir,
+    queryKey,
+    quote,
+    refreshing,
+  ])
 
   return {
     items,

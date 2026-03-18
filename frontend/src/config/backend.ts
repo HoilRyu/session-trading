@@ -45,12 +45,16 @@ export function getBackendWsBaseUrl() {
 export function getMarketsUrl({
   exchange = 'upbit',
   quote = 'KRW',
+  orderBy = 'name',
+  orderDir = 'asc',
   start = 0,
   limit = 50,
 }: MarketListQueryParams = {}) {
   const params = new URLSearchParams({
     exchange,
     quote,
+    order_by: orderBy,
+    order_dir: orderDir,
     start: String(start),
     limit: String(limit),
   })

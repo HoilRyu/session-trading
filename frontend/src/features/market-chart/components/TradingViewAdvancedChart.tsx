@@ -3,18 +3,28 @@ import { useEffect, useRef } from 'react'
 const TRADING_VIEW_WIDGET_SRC =
   'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
 
-const tradingViewConfig = {
-  autosize: true,
-  symbol: 'UPBIT:BTCKRW',
-  interval: '60',
-  theme: 'light',
-  style: '1',
-  locale: 'kr',
-  allow_symbol_change: false,
-  calendar: false,
+export const DEFAULT_TRADING_VIEW_SYMBOL = 'UPBIT:BTCKRW'
+
+function createTradingViewConfig(symbol: string) {
+  return {
+    autosize: true,
+    symbol,
+    interval: '60',
+    theme: 'light',
+    style: '1',
+    locale: 'kr',
+    allow_symbol_change: false,
+    calendar: false,
+  }
 }
 
-export function TradingViewAdvancedChart() {
+type TradingViewAdvancedChartProps = {
+  symbol: string
+}
+
+export function TradingViewAdvancedChart({
+  symbol = DEFAULT_TRADING_VIEW_SYMBOL,
+}: TradingViewAdvancedChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -33,14 +43,14 @@ export function TradingViewAdvancedChart() {
     script.src = TRADING_VIEW_WIDGET_SRC
     script.type = 'text/javascript'
     script.async = true
-    script.text = JSON.stringify(tradingViewConfig)
+    script.text = JSON.stringify(createTradingViewConfig(symbol))
 
     container.append(widgetRoot, script)
 
     return () => {
       container.innerHTML = ''
     }
-  }, [])
+  }, [symbol])
 
   return (
     <div

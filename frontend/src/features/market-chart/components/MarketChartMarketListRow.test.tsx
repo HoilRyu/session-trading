@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 
 import { MarketChartMarketListRow } from './MarketChartMarketListRow'
 
@@ -8,6 +8,7 @@ describe('MarketChartMarketListRow', () => {
       <MarketChartMarketListRow
         item={{
           marketListingId: 1,
+          chartSymbol: 'UPBIT:BTCKRW',
           baseAsset: 'BTC',
           quoteAsset: 'KRW',
           displayNameKo: '비트코인',
@@ -36,6 +37,7 @@ describe('MarketChartMarketListRow', () => {
       <MarketChartMarketListRow
         item={{
           marketListingId: 2,
+          chartSymbol: 'BINANCE:ETHUSDT',
           baseAsset: 'ETH',
           quoteAsset: 'USDT',
           displayNameEn: 'Ethereum',
@@ -58,6 +60,7 @@ describe('MarketChartMarketListRow', () => {
       <MarketChartMarketListRow
         item={{
           marketListingId: 3,
+          chartSymbol: 'UPBIT:SOLBTC',
           baseAsset: 'SOL',
           quoteAsset: 'BTC',
           tradePrice: '0.00234',
@@ -70,5 +73,30 @@ describe('MarketChartMarketListRow', () => {
 
     expect(screen.getByText('SOL')).toBeInTheDocument()
     expect(screen.getByText('SOL/BTC')).toBeInTheDocument()
+  })
+
+  it('선택 콜백이 있으면 행 클릭으로 해당 종목을 전달한다', () => {
+    const handleSelect = vi.fn()
+
+    render(
+      <MarketChartMarketListRow
+        item={{
+          marketListingId: 4,
+          chartSymbol: 'UPBIT:XRPBTC',
+          baseAsset: 'XRP',
+          quoteAsset: 'BTC',
+          displayNameKo: '리플',
+          tradePrice: '0.00000136',
+          changeRate: '+2.11%',
+          volumeText: '52.93',
+        }}
+        isSelected={false}
+        onSelect={handleSelect}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: '리플 BTC/XRP 차트 보기' }))
+
+    expect(handleSelect).toHaveBeenCalledWith(4)
   })
 })

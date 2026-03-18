@@ -2,19 +2,27 @@ import type { UIEvent } from 'react'
 
 import type {
   MarketChartMarketListItem,
+  MarketListOrderBy,
+  MarketListOrderDir,
   MarketListQuote,
 } from '../marketList.types'
+import { toggleMarketListSort } from '../marketList.types'
 import { MarketChartMarketListRow } from './MarketChartMarketListRow'
 
 type MarketChartMarketListPanelProps = {
   activeQuote: MarketListQuote
+  supportedQuotes?: MarketListQuote[]
   selectedMarketId: number | null
   items: MarketChartMarketListItem[]
   hasMore: boolean
   loading: boolean
   loadingMore: boolean
   error: string | null
+  orderBy?: MarketListOrderBy
+  orderDir?: MarketListOrderDir
   onQuoteChange: (quote: MarketListQuote) => void
+  onSortChange?: (orderBy: MarketListOrderBy, orderDir: MarketListOrderDir) => void
+  onSelectMarket?: (marketListingId: number) => void
   onLoadMore: () => void
   onRetry: () => void
 }
@@ -25,15 +33,31 @@ const QUOTE_TABS: Array<{ value: MarketListQuote; label: string }> = [
   { value: 'USDT', label: 'USDT' },
 ]
 
+const SORT_COLUMNS: Array<{
+  value: MarketListOrderBy
+  label: string
+  align: 'left' | 'right'
+}> = [
+  { value: 'name', label: '종목명', align: 'left' },
+  { value: 'price', label: '현재가', align: 'right' },
+  { value: 'change_rate', label: '전일대비', align: 'right' },
+  { value: 'trade_amount_24h', label: '거래대금', align: 'right' },
+]
+
 export function MarketChartMarketListPanel({
   activeQuote,
+  supportedQuotes = QUOTE_TABS.map((tab) => tab.value),
   selectedMarketId,
   items,
   hasMore,
   loading,
   loadingMore,
   error,
+  orderBy = 'name',
+  orderDir = 'asc',
   onQuoteChange,
+  onSortChange = () => {},
+  onSelectMarket,
   onLoadMore,
   onRetry,
 }: MarketChartMarketListPanelProps) {
@@ -61,6 +85,7 @@ export function MarketChartMarketListPanel({
       >
         {QUOTE_TABS.map((tab) => {
           const isActive = tab.value === activeQuote
+          const isSupported = supportedQuotes.includes(tab.value)
 
           return (
             <button
@@ -68,9 +93,13 @@ export function MarketChartMarketListPanel({
               type="button"
               role="tab"
               aria-selected={isActive}
+              aria-disabled={!isSupported}
+              disabled={!isSupported}
               onClick={() => onQuoteChange(tab.value)}
               className={`border-b-2 px-3 py-3 text-sm font-semibold ${
-                isActive
+                !isSupported
+                  ? 'border-transparent bg-slate-50 text-slate-300'
+                  : isActive
                   ? 'border-sky-500 text-sky-600'
                   : 'border-transparent text-slate-500'
               }`}
@@ -81,11 +110,55 @@ export function MarketChartMarketListPanel({
         })}
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,0.85fr)_minmax(0,0.75fr)_minmax(0,0.95fr)] gap-3 border-b border-slate-200 px-3 py-2 text-[11px] font-semibold text-slate-400">
-        <p>종목명</p>
-        <p className="text-right">현재가</p>
-        <p className="text-right">전일대비</p>
-        <p className="text-right">거래대금</p>
+      <div
+        role="table"
+        aria-label="마켓 목록 정렬 헤더"
+        className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,0.9fr)_minmax(0,0.78fr)_minmax(0,0.92fr)] gap-2 border-b border-slate-200 px-2 py-2 text-[11px] font-semibold text-slate-400 sm:px-3"
+      >
+        <div role="row" className="contents">
+          {SORT_COLUMNS.map((column) => {
+            const isActive = orderBy === column.value
+            const nextSort = toggleMarketListSort(
+              { orderBy, orderDir },
+              column.value,
+            )
+            const sortIndicator = isActive ? (orderDir === 'asc' ? '▲' : '▼') : '↕'
+            const ariaSort = isActive
+              ? orderDir === 'asc'
+                ? 'ascending'
+                : 'descending'
+              : 'none'
+
+            return (
+              <div
+                key={column.value}
+                role="columnheader"
+                aria-sort={ariaSort}
+              >
+                <button
+                  type="button"
+                  aria-pressed={isActive}
+                  aria-label={`${column.label} 정렬`}
+                  onClick={() => onSortChange(nextSort.orderBy, nextSort.orderDir)}
+                  className={`flex w-full items-center gap-1 rounded-md px-1 py-1 transition ${
+                    column.align === 'right'
+                      ? 'justify-end text-right'
+                      : 'justify-start text-left'
+                  } ${
+                    isActive
+                      ? 'bg-slate-100 text-slate-700'
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <span>{column.label}</span>
+                  <span aria-hidden="true" className="text-[10px] leading-none">
+                    {sortIndicator}
+                  </span>
+                </button>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       <div
@@ -122,6 +195,7 @@ export function MarketChartMarketListPanel({
                   selectedMarketId !== null &&
                   item.marketListingId === selectedMarketId
                 }
+                onSelect={onSelectMarket}
               />
             ))}
             {loadingMore ? (

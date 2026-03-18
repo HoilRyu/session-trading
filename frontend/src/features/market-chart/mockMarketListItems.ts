@@ -3,6 +3,7 @@ import type { MarketChartMarketListItem } from './marketList.types'
 export const MOCK_MARKET_LIST_ITEMS: MarketChartMarketListItem[] = [
   {
     marketListingId: 1,
+    chartSymbol: 'UPBIT:BTCKRW',
     baseAsset: 'BTC',
     quoteAsset: 'KRW',
     displayNameKo: '비트코인',
@@ -13,6 +14,7 @@ export const MOCK_MARKET_LIST_ITEMS: MarketChartMarketListItem[] = [
   },
   {
     marketListingId: 2,
+    chartSymbol: 'UPBIT:ETHKRW',
     baseAsset: 'ETH',
     quoteAsset: 'KRW',
     displayNameKo: '이더리움',
@@ -23,6 +25,7 @@ export const MOCK_MARKET_LIST_ITEMS: MarketChartMarketListItem[] = [
   },
   {
     marketListingId: 3,
+    chartSymbol: 'UPBIT:XRPKRW',
     baseAsset: 'XRP',
     quoteAsset: 'KRW',
     displayNameKo: '리플',
@@ -33,6 +36,7 @@ export const MOCK_MARKET_LIST_ITEMS: MarketChartMarketListItem[] = [
   },
   {
     marketListingId: 4,
+    chartSymbol: 'UPBIT:SOLKRW',
     baseAsset: 'SOL',
     quoteAsset: 'KRW',
     displayNameKo: '솔라나',
