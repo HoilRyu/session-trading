@@ -23,19 +23,28 @@ export function StrategyBoardSection({
         </div>
       </div>
 
-      <div className="mt-5 grid gap-4 xl:grid-cols-3">
-        {items.map((item) => {
-          return (
-            <StrategyEntryCard
-              key={item.id}
-              item={item}
-              isSelected={item.id === selectedStrategyId}
-              onSelect={() => {
-                onSelectStrategy(item.id)
-              }}
-            />
-          )
-        })}
+      <div
+        data-testid="strategy-board-grid"
+        className="mt-5 grid gap-4 xl:grid-cols-3"
+      >
+        {items.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-slate-200 px-5 py-6 text-sm text-slate-500 xl:col-span-3">
+            정의된 투자방식이 없습니다
+          </p>
+        ) : (
+          items.map((item) => {
+            return (
+              <StrategyEntryCard
+                key={item.id}
+                item={item}
+                isSelected={item.id === selectedStrategyId}
+                onSelect={() => {
+                  onSelectStrategy(item.id)
+                }}
+              />
+            )
+          })
+        )}
       </div>
     </section>
   )

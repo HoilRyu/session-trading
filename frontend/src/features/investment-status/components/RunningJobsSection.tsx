@@ -21,9 +21,15 @@ export function RunningJobsSection({ items }: RunningJobsSectionProps) {
       </div>
 
       <div className="mt-5 grid gap-3">
-        {items.map((item) => {
-          return <RunningJobListCard key={item.id} item={item} />
-        })}
+        {items.length === 0 ? (
+          <p className="rounded-2xl bg-slate-800/70 px-5 py-4 text-sm text-slate-300">
+            현재 실행 중인 작업이 없습니다
+          </p>
+        ) : (
+          items.map((item) => {
+            return <RunningJobListCard key={item.id} item={item} />
+          })
+        )}
       </div>
     </section>
   )

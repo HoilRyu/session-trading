@@ -64,4 +64,49 @@ describe('InvestmentStatusDesktopLayout', () => {
       return button.getAttribute('aria-pressed') !== 'true'
     })).toBe(true)
   })
+
+  it('작업 카드가 가로형 리스트 구조를 유지하고 작업이 없어도 상단 영역은 남는다', () => {
+    const { rerender } = render(<InvestmentStatusDesktopLayout />)
+    const runningJobsSection = screen
+      .getByText('현재 실행 중 작업')
+      .closest('section') as HTMLElement
+
+    expect(screen.getAllByTestId('running-job-card')[0]).toHaveClass('grid', 'items-center')
+
+    rerender(<InvestmentStatusDesktopLayout runningJobs={[]} />)
+
+    expect(runningJobsSection).toBeInTheDocument()
+    expect(
+      within(runningJobsSection).getByText('현재 실행 중인 작업이 없습니다'),
+    ).toBeInTheDocument()
+  })
+
+  it('전략이 없어도 보드를 유지하고 1개/2개 전략에서도 3열 리듬을 유지한다', () => {
+    const strategyA = {
+      id: 'strategy-momentum',
+      label: '단기 모멘텀',
+      summary: '실행 세션 1개',
+      description: '단기 추세 진입 전략',
+    }
+    const strategyB = {
+      id: 'strategy-trend',
+      label: '추세 추종',
+      summary: '실행 세션 2개',
+      description: '중기 추세 추종 전략',
+    }
+    const { rerender } = render(<InvestmentStatusDesktopLayout strategies={[]} />)
+    const strategyBoard = screen.getByText('투자 방식').closest('section') as HTMLElement
+
+    expect(within(strategyBoard).getByText('정의된 투자방식이 없습니다')).toBeInTheDocument()
+
+    rerender(<InvestmentStatusDesktopLayout strategies={[strategyA]} />)
+
+    expect(screen.getByTestId('strategy-board-grid')).toHaveClass('xl:grid-cols-3')
+    expect(screen.getAllByTestId('strategy-entry-card')).toHaveLength(1)
+
+    rerender(<InvestmentStatusDesktopLayout strategies={[strategyA, strategyB]} />)
+
+    expect(screen.getByTestId('strategy-board-grid')).toHaveClass('xl:grid-cols-3')
+    expect(screen.getAllByTestId('strategy-entry-card')).toHaveLength(2)
+  })
 })
