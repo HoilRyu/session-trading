@@ -6,6 +6,7 @@ import {
   BackendStatusDot,
   BackendStatusPanel,
 } from '../features/backend-status/components/BackendStatus'
+import { DashboardMobileLayout } from '../features/dashboard/components/DashboardMobileLayout'
 import { MarketChartMobileListLayout } from '../features/market-chart/components/MarketChartMobileListLayout'
 import { DesktopSidebarMenu } from '../features/navigation/DesktopSidebarMenu'
 import {
@@ -44,6 +45,7 @@ export function HomePage() {
     (activeRouteMatch?.handle as { menuLabel?: string } | undefined)?.menuLabel ??
     '대시보드'
   const isMobileMarketChartListRoute = location.pathname === '/market-chart'
+  const isMobileDashboardRoute = location.pathname === '/dashboard'
 
   return (
     <main className="min-h-screen bg-slate-100">
@@ -70,6 +72,8 @@ export function HomePage() {
         </div>
         {isMobileMarketChartListRoute ? (
           <MarketChartMobileListLayout />
+        ) : isMobileDashboardRoute ? (
+          <DashboardMobileLayout />
         ) : (
           <MobileAreaBlock
             label={`콘텐츠 영역 - ${activeMenuLabel}`}
