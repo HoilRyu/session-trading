@@ -10,7 +10,7 @@ import { DashboardWireframeCard } from './DashboardWireframeCard'
 
 export function DashboardDesktopLayout() {
   return (
-    <section data-testid="dashboard-desktop-layout" className="flex flex-col gap-6">
+    <section data-testid="dashboard-desktop-layout" className="flex flex-1 flex-col gap-6">
       <DashboardWireframeCard {...DASHBOARD_HEADER_CARD} />
 
       <div className="grid grid-cols-4 gap-4">

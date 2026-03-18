@@ -9,6 +9,7 @@ describe('DashboardDesktopLayout', () => {
     expect(screen.getByTestId('dashboard-desktop-layout')).toHaveClass(
       'flex',
       'flex-col',
+      'flex-1',
       'gap-6',
     )
     expect(screen.getByTestId('dashboard-desktop-layout')).not.toHaveClass(
