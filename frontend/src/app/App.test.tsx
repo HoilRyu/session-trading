@@ -81,15 +81,28 @@ describe('App routing', () => {
     expect(
       within(desktopSidebarMenu).getByRole('link', { name: '설정' }),
     ).toBeInTheDocument()
-    expect(screen.getByText('상단 영역 - 대시보드')).toBeInTheDocument()
-    expect(screen.getByText('상단 앱바 영역 - 대시보드')).toBeInTheDocument()
+    expect(screen.queryByText('상단 영역 - 대시보드')).not.toBeInTheDocument()
+    const desktopLayout = screen.getByTestId('dashboard-desktop-layout')
+
+    expect(within(desktopLayout).getByText('Dashboard Header')).toBeInTheDocument()
+    expect(within(desktopLayout).getByText('Summary 01')).toBeInTheDocument()
+    expect(within(desktopLayout).getByText('Primary Panel')).toBeInTheDocument()
+    const mobileAppBar = screen.getByText('상단 앱바 영역 - 대시보드')
+    const mobileSection = mobileAppBar.closest('section') as HTMLElement
+
+    expect(mobileAppBar).toBeInTheDocument()
     expect(screen.getByText('하단 탭 영역')).toBeInTheDocument()
-    expect(screen.getAllByText('콘텐츠 영역 - 대시보드')).toHaveLength(2)
-    expect(screen.getAllByText(/콘텐츠 영역/)).toHaveLength(2)
-    expect(screen.getAllByText(/콘텐츠 영역/)[1]).toHaveClass('flex-1')
-    expect(screen.getAllByText(/콘텐츠 영역/)[1]).not.toHaveClass(
-      'min-h-[calc(100vh-10rem)]',
+    expect(
+      within(mobileSection).queryByText('콘텐츠 영역 - 대시보드'),
+    ).not.toBeInTheDocument()
+    expect(within(mobileSection).getByTestId('dashboard-mobile-layout')).toHaveClass(
+      'overflow-y-auto',
     )
+    expect(within(mobileSection).getByText('Summary 01')).toBeInTheDocument()
+    expect(within(mobileSection).getByText('Summary 04')).toBeInTheDocument()
+    expect(within(mobileSection).getByText('Primary Panel')).toBeInTheDocument()
+    expect(within(mobileSection).getByText('Wide Panel B')).toBeInTheDocument()
+    expect(within(mobileSection).queryByText('Dashboard Header')).not.toBeInTheDocument()
 
     expect(screen.getByText('서버 상태')).toBeInTheDocument()
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
