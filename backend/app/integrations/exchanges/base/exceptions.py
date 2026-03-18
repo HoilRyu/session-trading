@@ -1,0 +1,2 @@
+class ExchangeIntegrationError(RuntimeError):
+    pass

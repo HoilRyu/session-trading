@@ -7,12 +7,29 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import api_router
 from app.core.config import get_settings
 from app.db.session import ping_database
+from app.services.market_data_stream import get_market_data_stream_service
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
     await ping_database()
-    yield
+    stream_services = []
+
+    for exchange_code in ("upbit", "bithumb", "binance"):
+        if not getattr(settings, f"{exchange_code}_ticker_auto_start", False):
+            continue
+
+        stream_service = get_market_data_stream_service(exchange_code)
+        await stream_service.start_ticker_stream()
+        stream_services.append(stream_service)
+
+    try:
+        yield
+    finally:
+        for stream_service in reversed(stream_services):
+            if stream_service.get_ticker_stream_status().running:
+                await stream_service.stop_ticker_stream()
 
 
 def create_app() -> FastAPI:
