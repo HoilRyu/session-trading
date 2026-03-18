@@ -1,22 +1,57 @@
+import { useEffect, useState } from 'react'
+
 import {
   mockRunningJobs,
   mockStrategies,
 } from '../data/investmentStatus.mock'
+import type { RunningJobItem, StrategyItem } from '../investmentStatus.types'
 import { RunningJobsSection } from './RunningJobsSection'
 import { StrategyBoardSection } from './StrategyBoardSection'
 import { StrategyDetailPanel } from './StrategyDetailPanel'
 
-export function InvestmentStatusDesktopLayout() {
+type InvestmentStatusDesktopLayoutProps = {
+  runningJobs?: RunningJobItem[]
+  strategies?: StrategyItem[]
+}
+
+export function InvestmentStatusDesktopLayout({
+  runningJobs = mockRunningJobs,
+  strategies = mockStrategies,
+}: InvestmentStatusDesktopLayoutProps) {
+  const [selectedStrategyId, setSelectedStrategyId] = useState<string | null>(null)
+  const selectedStrategy =
+    strategies.find((strategy) => {
+      return strategy.id === selectedStrategyId
+    }) ?? null
+
+  useEffect(() => {
+    if (selectedStrategyId === null) {
+      return
+    }
+
+    const hasSelectedStrategy = strategies.some((strategy) => {
+      return strategy.id === selectedStrategyId
+    })
+
+    if (!hasSelectedStrategy) {
+      setSelectedStrategyId(null)
+    }
+  }, [selectedStrategyId, strategies])
+
   return (
     <div
       data-testid="investment-status-desktop-layout"
       className="flex h-[calc(100vh-3rem)] min-h-0 flex-1 flex-col gap-6"
     >
-      <RunningJobsSection items={mockRunningJobs} />
+      <RunningJobsSection items={runningJobs} />
 
       <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.72fr)]">
-        <StrategyBoardSection items={mockStrategies} />
-        <StrategyDetailPanel />
+        <StrategyBoardSection
+          items={strategies}
+          selectedStrategyId={selectedStrategyId}
+          onSelectStrategy={setSelectedStrategyId}
+        />
+        <StrategyDetailPanel item={selectedStrategy} />
       </div>
     </div>
   )
