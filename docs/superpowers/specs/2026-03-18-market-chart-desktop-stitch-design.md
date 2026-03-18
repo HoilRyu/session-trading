@@ -5,13 +5,16 @@
 - 작성일: 2026-03-18
 - 대상 경로: `frontend/src/features/market-chart/`
 - 목적: 기존 데스크톱 `시세 / 차트` 탭에 Stitch `Market / Chart Dashboard` 시안의 기관형 다크 대시보드 톤과 구조를 적용한다.
+- 참조 Stitch 프로젝트: `projects/3231459091629688405`
+- 참조 Stitch 화면: `projects/3231459091629688405/screens/a15090ae05d84bdab3e896d1d863ecb6`
+- 참조 화면 제목: `Market / Chart Dashboard`
 
 ## 목표
 
 - 전역 레이아웃과 라우팅은 유지하고, 데스크톱 `시세 / 차트` 콘텐츠 영역만 재구성해야 한다.
 - 기존 거래소 선택, quote 선택, 서버 정렬, 종목 선택, 무한 스크롤, TradingView 심볼 연동은 유지해야 한다.
 - Stitch 시안의 핵심 구조인 `페이지 헤더`, `선택 마켓 요약 카드`, `차트 툴바 + 차트 패널`, `우측 마켓 패널`을 현재 코드베이스에 맞게 반영해야 한다.
-- 우측 마켓 패널 비율은 현재 확인한 균형형 비율을 유지해야 한다.
+- 메인 2열 비율은 `차트 72% / 우측 패널 28%`를 목표로 하고, 우측 패널은 `min 22rem, max 28%` 범위에서 유지해야 한다.
 - 새로 추가되는 인터벌 툴바는 실제 TradingView interval 설정과 연결돼야 한다.
 
 ## 범위
@@ -70,6 +73,12 @@ MarketChartDesktopLayout
 │  └─ 마켓 목록 패널
 ```
 
+레이아웃 목표값:
+
+- 상단 헤더 + 요약 카드 + 본문 2열 구조
+- 본문은 `grid-cols-[minmax(0,1fr)_minmax(22rem,28%)]` 수준의 비율 유지
+- 차트가 시각적 주인공이어야 하지만, 우측 패널은 quote 탭과 6개 이상 행이 한 화면에 안정적으로 보여야 한다
+
 ### 3. 상단 플레이스홀더는 제거하고 실제 헤더와 요약 카드로 대체한다
 
 현재 레이아웃은 `상단 영역 - 시세 / 차트`라는 플레이스홀더 블록을 먼저 렌더링한다. 이 블록은 삭제한다.
@@ -79,13 +88,13 @@ MarketChartDesktopLayout
 - 페이지 헤더
   - 제목: `Market / Chart`
   - 설명: 현재 탭의 역할을 짧게 설명
-  - 거래소 상태와 충돌하지 않는 선에서 최소한의 메타 정보 배치
+  - 우측에는 기존 `MarketChartExchangeSelector`를 재사용해 거래소 선택을 배치
 - 선택 마켓 요약 카드
   - 선택 종목명
   - 거래소명 + 거래쌍
   - 현재가
   - 전일대비
-  - 거래대금 또는 거래량 표시
+  - 마지막 지표는 라벨을 `거래대금`으로 고정하고, 값은 현재 `volumeText`를 사용한다
 
 헤더와 요약 카드는 Stitch 시안의 정보 계층을 가져오되, 현재 실제 데이터로 채울 수 있는 값만 노출한다.
 
@@ -129,6 +138,14 @@ Stitch 시안에는 `1H / 4H / 1D / 1W` 인터벌 탭과 부가 액션이 있다
 - 요청 범위는 데스크톱 시세/차트 탭 디자인 적용이지 신규 기능 추가가 아니다.
 - 비동작 UI를 넣으면 사용자가 실제 기능으로 오해할 수 있다.
 
+인터벌 유지 규칙:
+
+- 기본값은 첫 진입 시 `1H`
+- 종목 변경 시 현재 인터벌 유지
+- 거래소 변경 시 현재 인터벌 유지
+- quote 변경 시 현재 인터벌 유지
+- 컴포넌트가 언마운트됐다가 다시 마운트되면 다시 `1H`로 시작
+
 ### 6. TradingView 위젯은 symbol과 interval을 함께 받도록 확장한다
 
 현재 `TradingViewAdvancedChart`는 `symbol`만 입력받고 interval은 `'60'`으로 고정돼 있다. 이를 확장해 `interval`도 props로 받도록 바꾼다.
@@ -145,6 +162,7 @@ Stitch 시안에는 `1H / 4H / 1D / 1W` 인터벌 탭과 부가 액션이 있다
 - 종목 변경 시 위젯 재생성
 - 인터벌 변경 시 위젯 재생성
 - 기본 인터벌은 `1H`
+- 위젯 테마는 `dark`로 변경해 전체 다크 대시보드 톤과 맞춘다
 
 이 변경은 실제 UI 상호작용과 차트 결과가 연결되는 최소 범위의 기능 확장이다.
 
@@ -198,8 +216,8 @@ Stitch 시안에는 `1H / 4H / 1D / 1W` 인터벌 탭과 부가 액션이 있다
 frontend/src/features/market-chart/components/
 ├─ MarketChartDesktopLayout.tsx
 ├─ MarketChartSelectionSummary.tsx
-├─ MarketChartPanelHeader.tsx
 ├─ MarketChartIntervalToolbar.tsx
+├─ MarketChartExchangeSelector.tsx
 ├─ MarketChartMarketListPanel.tsx
 ├─ MarketChartMarketListRow.tsx
 └─ TradingViewAdvancedChart.tsx
@@ -211,10 +229,10 @@ frontend/src/features/market-chart/components/
   - 상태 관리
   - 레이아웃 조합
   - 선택 마켓/차트 interval 계산
+- `MarketChartExchangeSelector`
+  - 페이지 헤더 우측에서 거래소 전환 담당
 - `MarketChartSelectionSummary`
   - 선택 종목 핵심 수치 표현
-- `MarketChartPanelHeader`
-  - 페이지 타이틀과 설명
 - `MarketChartIntervalToolbar`
   - 인터벌 선택 UI
 - `TradingViewAdvancedChart`
@@ -224,7 +242,7 @@ frontend/src/features/market-chart/components/
 - `MarketChartMarketListRow`
   - 각 종목 행 렌더링
 
-`PanelHeader`와 `IntervalToolbar`는 너무 커지지 않으면 단일 파일 내부 보조 컴포넌트로 남겨도 된다. 다만 테스트와 가독성이 급격히 나빠지면 분리한다.
+페이지 헤더는 별도 파일로 분리하지 않고 `MarketChartDesktopLayout` 내부 마크업으로 유지한다. 새 파일은 실제로 독립 책임이 생기는 `SelectionSummary`와 `IntervalToolbar`만 추가한다.
 
 ## 상태와 데이터 흐름
 
@@ -264,13 +282,14 @@ MarketChartDesktopLayout 마운트
 사용자 거래소 또는 quote 변경
 → 목록 재조회
 → 선택 종목 재설정
+→ 현재 activeInterval은 유지
 → summary / chart symbol 동기화
 ```
 
 ## 예외 및 오류 처리
 
 - 목록 로딩 중:
-  - 요약 카드는 빈 상태 또는 플레이스홀더 값 표시
+  - 초기 로드 또는 거래소/quote 변경으로 선택 종목이 비어 있으면 요약 카드는 skeleton 없이 `-` 기반 플레이스홀더 값을 표시
   - 우측 패널은 기존 로딩 메시지 유지
 - 목록 에러:
   - 우측 패널 재시도 UI 유지
@@ -289,10 +308,14 @@ MarketChartDesktopLayout 마운트
 - 선택 종목이 바뀌면 요약 카드의 종목명, 거래쌍, 현재가가 함께 바뀐다.
 - 선택 종목이 바뀌면 TradingView에 전달되는 심볼이 바뀐다.
 - 인터벌 버튼 클릭 시 TradingView에 전달되는 interval이 바뀐다.
+- 거래소 변경, quote 변경, 종목 변경 시 현재 인터벌이 유지된다.
 - 거래소 변경 시 목록 조회와 기본 차트 심볼 규칙이 유지된다.
 - quote 탭, 정렬 버튼, 추가 로딩 메시지, 선택 행 강조가 새 다크 레이아웃에서도 동작한다.
 - `MarketChartMarketListRow`가 상승/하락/보합에 맞는 색상 클래스를 적용한다.
-- `TradingViewAdvancedChart`가 `symbol`과 `interval`을 포함한 설정으로 위젯을 생성한다.
+- `TradingViewAdvancedChart`가 `symbol`, `interval`, `theme='dark'`를 포함한 설정으로 위젯을 생성한다.
+- 지원하지 않는 quote일 때 기본 quote fallback 규칙이 유지된다.
+- 선택 종목이 없을 때 요약 카드가 `-` 기반 기본값을 표시한다.
+- 로딩/에러 상태에서도 요약 카드와 우측 패널이 설계된 기본 상태를 유지한다.
 
 ## 구현 시 주의점
 
@@ -306,10 +329,12 @@ MarketChartDesktopLayout 마운트
 
 - 수정:
   - `frontend/src/features/market-chart/components/MarketChartDesktopLayout.tsx`
+  - `frontend/src/features/market-chart/components/MarketChartExchangeSelector.tsx`
   - `frontend/src/features/market-chart/components/TradingViewAdvancedChart.tsx`
   - `frontend/src/features/market-chart/components/MarketChartMarketListPanel.tsx`
   - `frontend/src/features/market-chart/components/MarketChartMarketListRow.tsx`
   - `frontend/src/features/market-chart/components/MarketChartDesktopLayout.test.tsx`
+  - `frontend/src/features/market-chart/components/MarketChartExchangeSelector.test.tsx`
   - `frontend/src/features/market-chart/components/TradingViewAdvancedChart.test.tsx`
   - `frontend/src/features/market-chart/components/MarketChartMarketListPanel.test.tsx`
   - `frontend/src/features/market-chart/components/MarketChartMarketListRow.test.tsx`
@@ -323,3 +348,4 @@ MarketChartDesktopLayout 마운트
 - 기존 시세/차트 핵심 기능이 유지된다.
 - 인터벌 툴바가 실제 차트와 연결된다.
 - 테스트가 새 구조를 기준으로 통과한다.
+- 구조적으로는 `페이지 헤더`, `선택 마켓 요약 카드`, `차트 툴바 + 다크 TradingView 패널`, `우측 다크 마켓 패널`이 한 화면 안에서 확인돼야 한다.
