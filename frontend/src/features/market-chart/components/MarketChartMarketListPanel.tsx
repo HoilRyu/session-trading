@@ -1,3 +1,5 @@
+import type { UIEvent } from 'react'
+
 import type {
   MarketChartMarketListItem,
   MarketListQuote,
@@ -8,9 +10,12 @@ type MarketChartMarketListPanelProps = {
   activeQuote: MarketListQuote
   selectedMarketId: number | null
   items: MarketChartMarketListItem[]
+  hasMore: boolean
   loading: boolean
+  loadingMore: boolean
   error: string | null
   onQuoteChange: (quote: MarketListQuote) => void
+  onLoadMore: () => void
   onRetry: () => void
 }
 
@@ -24,11 +29,26 @@ export function MarketChartMarketListPanel({
   activeQuote,
   selectedMarketId,
   items,
+  hasMore,
   loading,
+  loadingMore,
   error,
   onQuoteChange,
+  onLoadMore,
   onRetry,
 }: MarketChartMarketListPanelProps) {
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    if (!hasMore || loading || loadingMore || error) {
+      return
+    }
+
+    const { scrollTop, clientHeight, scrollHeight } = event.currentTarget
+
+    if (scrollTop + clientHeight >= scrollHeight - 24) {
+      onLoadMore()
+    }
+  }
+
   return (
     <section
       data-testid="market-list-panel"
@@ -70,6 +90,7 @@ export function MarketChartMarketListPanel({
 
       <div
         data-testid="market-list-scroll"
+        onScroll={handleScroll}
         className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-2 py-2"
       >
         {loading ? (
@@ -103,6 +124,11 @@ export function MarketChartMarketListPanel({
                 }
               />
             ))}
+            {loadingMore ? (
+              <div className="rounded-2xl bg-white px-3 py-3 text-center text-xs font-medium text-slate-500">
+                마켓 목록을 더 불러오는 중...
+              </div>
+            ) : null}
           </div>
         )}
       </div>

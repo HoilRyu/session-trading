@@ -29,15 +29,19 @@ const TEST_ITEMS: MarketChartMarketListItem[] = [
 describe('MarketChartMarketListPanel', () => {
   it('탭 전환과 리스트 구조를 렌더링한다', () => {
     const handleQuoteChange = vi.fn()
+    const handleLoadMore = vi.fn()
 
     render(
       <MarketChartMarketListPanel
         activeQuote="KRW"
         selectedMarketId={1}
         items={TEST_ITEMS}
+        hasMore
         loading={false}
+        loadingMore={false}
         error={null}
         onQuoteChange={handleQuoteChange}
+        onLoadMore={handleLoadMore}
         onRetry={vi.fn()}
       />,
     )
@@ -69,6 +73,25 @@ describe('MarketChartMarketListPanel', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'BTC' }))
 
     expect(handleQuoteChange).toHaveBeenCalledWith('BTC')
+
+    const scrollContainer = screen.getByTestId('market-list-scroll')
+
+    Object.defineProperty(scrollContainer, 'scrollTop', {
+      configurable: true,
+      value: 180,
+    })
+    Object.defineProperty(scrollContainer, 'clientHeight', {
+      configurable: true,
+      value: 120,
+    })
+    Object.defineProperty(scrollContainer, 'scrollHeight', {
+      configurable: true,
+      value: 320,
+    })
+
+    fireEvent.scroll(scrollContainer)
+
+    expect(handleLoadMore).toHaveBeenCalledTimes(1)
   })
 
   it('로딩과 에러 상태를 렌더링한다', () => {
@@ -79,9 +102,12 @@ describe('MarketChartMarketListPanel', () => {
         activeQuote="KRW"
         selectedMarketId={null}
         items={[]}
+        hasMore
         loading
+        loadingMore={false}
         error={null}
         onQuoteChange={vi.fn()}
+        onLoadMore={vi.fn()}
         onRetry={handleRetry}
       />,
     )
@@ -93,9 +119,12 @@ describe('MarketChartMarketListPanel', () => {
         activeQuote="KRW"
         selectedMarketId={null}
         items={[]}
+        hasMore
         loading={false}
+        loadingMore={false}
         error="마켓 목록을 불러오지 못했어요."
         onQuoteChange={vi.fn()}
+        onLoadMore={vi.fn()}
         onRetry={handleRetry}
       />,
     )
@@ -105,5 +134,60 @@ describe('MarketChartMarketListPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: '다시 시도' }))
 
     expect(handleRetry).toHaveBeenCalledTimes(1)
+  })
+
+  it('추가 로딩 중에는 하단 로딩 문구를 보여주고 더 이상 없으면 호출하지 않는다', () => {
+    const handleLoadMore = vi.fn()
+
+    const { rerender } = render(
+      <MarketChartMarketListPanel
+        activeQuote="KRW"
+        selectedMarketId={1}
+        items={TEST_ITEMS}
+        hasMore
+        loading={false}
+        loadingMore
+        error={null}
+        onQuoteChange={vi.fn()}
+        onLoadMore={handleLoadMore}
+        onRetry={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('마켓 목록을 더 불러오는 중...')).toBeInTheDocument()
+
+    rerender(
+      <MarketChartMarketListPanel
+        activeQuote="KRW"
+        selectedMarketId={1}
+        items={TEST_ITEMS}
+        hasMore={false}
+        loading={false}
+        loadingMore={false}
+        error={null}
+        onQuoteChange={vi.fn()}
+        onLoadMore={handleLoadMore}
+        onRetry={vi.fn()}
+      />,
+    )
+
+    const scrollContainer = screen.getByTestId('market-list-scroll')
+
+    Object.defineProperty(scrollContainer, 'scrollTop', {
+      configurable: true,
+      value: 180,
+    })
+    Object.defineProperty(scrollContainer, 'clientHeight', {
+      configurable: true,
+      value: 120,
+    })
+    Object.defineProperty(scrollContainer, 'scrollHeight', {
+      configurable: true,
+      value: 320,
+    })
+
+    fireEvent.scroll(scrollContainer)
+
+    expect(handleLoadMore).not.toHaveBeenCalled()
   })
 })
