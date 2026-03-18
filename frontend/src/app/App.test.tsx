@@ -116,8 +116,15 @@ describe('App routing', () => {
       within(desktopSidebarMenu).getByRole('link', { name: '투자 현황' }),
     )
 
-    expect(await screen.findByText('상단 영역 - 투자 현황')).toBeInTheDocument()
-    expect(screen.getAllByText('콘텐츠 영역 - 투자 현황')).toHaveLength(2)
+    const desktopLayout = await screen.findByTestId(
+      'investment-status-desktop-layout',
+    )
+
+    expect(desktopLayout).toBeInTheDocument()
+    expect(screen.queryByText('상단 영역 - 투자 현황')).not.toBeInTheDocument()
+    expect(
+      within(desktopLayout).queryByText('콘텐츠 영역 - 투자 현황'),
+    ).not.toBeInTheDocument()
   })
 
   it('renders the market chart desktop layout when the sidebar menu is clicked', async () => {
@@ -191,8 +198,13 @@ describe('App routing', () => {
       ),
     )
 
-    expect(await screen.findByText('상단 앱바 영역 - 투자 현황')).toBeInTheDocument()
-    expect(screen.getAllByText('콘텐츠 영역 - 투자 현황')).toHaveLength(2)
+    const mobileAppBar = await screen.findByText('상단 앱바 영역 - 투자 현황')
+    const mobileSection = mobileAppBar.closest('section') as HTMLElement
+
+    expect(within(mobileSection).getByText('콘텐츠 영역 - 투자 현황')).toBeInTheDocument()
+    expect(
+      within(mobileSection).queryByTestId('investment-status-desktop-layout'),
+    ).not.toBeInTheDocument()
   })
 
   it('renders the market list area on mobile for the market chart route', async () => {
