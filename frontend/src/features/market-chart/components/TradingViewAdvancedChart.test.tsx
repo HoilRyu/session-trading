@@ -28,4 +28,23 @@ describe('TradingViewAdvancedChart', () => {
 
     expect(script?.textContent).toContain('UPBIT:XRPBTC')
   })
+
+  it('interval, theme, showVolume props를 위젯 설정에 반영한다', () => {
+    render(
+      <TradingViewAdvancedChart
+        symbol="BINANCE:BTCUSDT"
+        interval="240"
+        theme="dark"
+        showVolume={false}
+      />,
+    )
+
+    const script = document.querySelector(
+      'script[src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"]',
+    )
+
+    expect(script?.textContent).toContain('"interval":"240"')
+    expect(script?.textContent).toContain('"theme":"dark"')
+    expect(script?.textContent).toContain('"hide_volume":true')
+  })
 })

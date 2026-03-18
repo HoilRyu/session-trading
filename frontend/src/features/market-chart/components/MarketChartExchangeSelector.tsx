@@ -1,18 +1,19 @@
 import {
+  ALL_MARKET_LIST_EXCHANGES,
   getExchangeDisplayName,
   type MarketListExchange,
 } from '../marketList.types'
 
 type MarketChartExchangeSelectorProps = {
   activeExchange: MarketListExchange
+  exchanges?: MarketListExchange[]
   isLoading?: boolean
   onExchangeChange: (exchange: MarketListExchange) => void
 }
 
-const EXCHANGES: MarketListExchange[] = ['upbit', 'bithumb', 'binance']
-
 export function MarketChartExchangeSelector({
   activeExchange,
+  exchanges = ALL_MARKET_LIST_EXCHANGES,
   isLoading = false,
   onExchangeChange,
 }: MarketChartExchangeSelectorProps) {
@@ -35,7 +36,7 @@ export function MarketChartExchangeSelector({
         aria-label="거래소 선택"
         className="inline-flex rounded-full border border-slate-200 bg-slate-100 p-1"
       >
-        {EXCHANGES.map((exchange) => {
+        {exchanges.map((exchange) => {
           const isActive = exchange === activeExchange
           return (
             <button

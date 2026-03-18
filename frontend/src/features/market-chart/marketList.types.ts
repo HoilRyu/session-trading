@@ -15,10 +15,18 @@ export type MarketListSortState = {
   orderDir: MarketListOrderDir
 }
 
+export const ALL_MARKET_LIST_EXCHANGES: MarketListExchange[] = [
+  'upbit',
+  'bithumb',
+  'binance',
+]
+
 export const DEFAULT_MARKET_LIST_SORT: MarketListSortState = {
   orderBy: 'name',
   orderDir: 'asc',
 }
+
+export const DEFAULT_MARKET_LIST_PAGE_SIZE = 50
 
 export const SUPPORTED_MARKET_QUOTES_BY_EXCHANGE: Record<
   MarketListExchange,

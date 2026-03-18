@@ -4,26 +4,45 @@ const TRADING_VIEW_WIDGET_SRC =
   'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
 
 export const DEFAULT_TRADING_VIEW_SYMBOL = 'UPBIT:BTCKRW'
+const DEFAULT_TRADING_VIEW_INTERVAL = '60'
+const DEFAULT_TRADING_VIEW_THEME = 'light'
 
-function createTradingViewConfig(symbol: string) {
+function createTradingViewConfig({
+  symbol,
+  interval,
+  theme,
+  showVolume,
+}: {
+  symbol: string
+  interval: string
+  theme: 'light' | 'dark'
+  showVolume: boolean
+}) {
   return {
     autosize: true,
     symbol,
-    interval: '60',
-    theme: 'light',
+    interval,
+    theme,
     style: '1',
     locale: 'kr',
     allow_symbol_change: false,
     calendar: false,
+    hide_volume: !showVolume,
   }
 }
 
 type TradingViewAdvancedChartProps = {
   symbol: string
+  interval?: string
+  theme?: 'light' | 'dark'
+  showVolume?: boolean
 }
 
 export function TradingViewAdvancedChart({
   symbol = DEFAULT_TRADING_VIEW_SYMBOL,
+  interval = DEFAULT_TRADING_VIEW_INTERVAL,
+  theme = DEFAULT_TRADING_VIEW_THEME,
+  showVolume = true,
 }: TradingViewAdvancedChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
 
@@ -43,14 +62,16 @@ export function TradingViewAdvancedChart({
     script.src = TRADING_VIEW_WIDGET_SRC
     script.type = 'text/javascript'
     script.async = true
-    script.text = JSON.stringify(createTradingViewConfig(symbol))
+    script.text = JSON.stringify(
+      createTradingViewConfig({ symbol, interval, theme, showVolume }),
+    )
 
     container.append(widgetRoot, script)
 
     return () => {
       container.innerHTML = ''
     }
-  }, [symbol])
+  }, [interval, showVolume, symbol, theme])
 
   return (
     <div

@@ -8,10 +8,10 @@ import type {
   MarketListOrderDir,
   MarketListQuote,
 } from '../marketList.types'
+import { DEFAULT_MARKET_LIST_PAGE_SIZE } from '../marketList.types'
 import { mapMarketListResponse } from '../api/marketListMapper'
 import type { MarketListApiResponse } from '../api/marketList.types'
 
-const MARKET_LIST_PAGE_SIZE = 50
 const MARKET_LIST_REFRESH_INTERVAL_MS = 1000
 
 type UseMarketListOptions = {
@@ -20,6 +20,8 @@ type UseMarketListOptions = {
   limit?: number
   orderBy?: MarketListOrderBy
   orderDir?: MarketListOrderDir
+  pollIntervalMs?: number
+  autoRefreshEnabled?: boolean
 }
 
 async function fetchMarketPage({
@@ -81,9 +83,11 @@ export function getDefaultSelectedMarketId(items: MarketChartMarketListItem[]) {
 export function useMarketList({
   exchange = 'upbit',
   quote,
-  limit = MARKET_LIST_PAGE_SIZE,
+  limit = DEFAULT_MARKET_LIST_PAGE_SIZE,
   orderBy = 'name',
   orderDir = 'asc',
+  pollIntervalMs = MARKET_LIST_REFRESH_INTERVAL_MS,
+  autoRefreshEnabled = true,
 }: UseMarketListOptions) {
   const [items, setItems] = useState<MarketChartMarketListItem[]>([])
   const [total, setTotal] = useState(0)
@@ -202,7 +206,7 @@ export function useMarketList({
   }, [loadInitialPage])
 
   useEffect(() => {
-    if (loading || loadingMore) {
+    if (!autoRefreshEnabled || loading || loadingMore) {
       return
     }
 
@@ -255,12 +259,13 @@ export function useMarketList({
           setRefreshing(false)
         }
       })()
-    }, MARKET_LIST_REFRESH_INTERVAL_MS)
+    }, pollIntervalMs)
 
     return () => {
       window.clearInterval(intervalId)
     }
   }, [
+    autoRefreshEnabled,
     exchange,
     items.length,
     limit,
@@ -268,6 +273,7 @@ export function useMarketList({
     loadingMore,
     orderBy,
     orderDir,
+    pollIntervalMs,
     queryKey,
     quote,
     refreshing,

@@ -12,6 +12,17 @@ import { InvestmentStatusPage } from '../pages/InvestmentStatusPage'
 import { MarketChartPage } from '../pages/MarketChartPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { SettingsPage } from '../pages/SettingsPage'
+import { useServerSettings } from '../features/settings/hooks/useServerSettings'
+
+function HomeIndexRedirect() {
+  const { settings, loading } = useServerSettings()
+
+  if (loading && !settings) {
+    return null
+  }
+
+  return <Navigate to={settings?.general.default_route ?? '/dashboard'} replace />
+}
 
 export const routes = [
   {
@@ -20,7 +31,7 @@ export const routes = [
     children: [
       {
         index: true,
-        element: <Navigate to="/dashboard" replace />,
+        element: <HomeIndexRedirect />,
       },
       {
         path: 'dashboard',
