@@ -6,9 +6,10 @@ import { MarketChartMarketListPanel } from './MarketChartMarketListPanel'
 
 export function MarketChartMobileListLayout() {
   const [activeQuote, setActiveQuote] = useState<MarketListQuote>('KRW')
-  const { items, loading, error, refetch } = useMarketList({
+  const { items, hasMore, loading, loadingMore, error, loadMore, refetch } =
+    useMarketList({
     quote: activeQuote,
-  })
+    })
 
   return (
     <div
@@ -19,9 +20,12 @@ export function MarketChartMobileListLayout() {
         activeQuote={activeQuote}
         selectedMarketId={null}
         items={items}
+        hasMore={hasMore}
         loading={loading}
+        loadingMore={loadingMore}
         error={error}
         onQuoteChange={setActiveQuote}
+        onLoadMore={loadMore}
         onRetry={refetch}
       />
     </div>

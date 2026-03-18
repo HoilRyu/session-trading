@@ -22,9 +22,10 @@ function MarketChartArea({ label, className }: MarketChartAreaProps) {
 
 export function MarketChartDesktopLayout() {
   const [activeQuote, setActiveQuote] = useState<MarketListQuote>('KRW')
-  const { items, loading, error, refetch } = useMarketList({
+  const { items, hasMore, loading, loadingMore, error, loadMore, refetch } =
+    useMarketList({
     quote: activeQuote,
-  })
+    })
   const selectedMarketId = getDefaultSelectedMarketId(items)
 
   return (
@@ -58,9 +59,12 @@ export function MarketChartDesktopLayout() {
           activeQuote={activeQuote}
           selectedMarketId={selectedMarketId}
           items={items}
+          hasMore={hasMore}
           loading={loading}
+          loadingMore={loadingMore}
           error={error}
           onQuoteChange={setActiveQuote}
+          onLoadMore={loadMore}
           onRetry={refetch}
         />
       </div>
