@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import {
   mockRunningJobs,
@@ -19,24 +19,16 @@ export function InvestmentStatusDesktopLayout({
   strategies = mockStrategies,
 }: InvestmentStatusDesktopLayoutProps) {
   const [selectedStrategyId, setSelectedStrategyId] = useState<string | null>(null)
-  const selectedStrategy =
-    strategies.find((strategy) => {
-      return strategy.id === selectedStrategyId
-    }) ?? null
-
-  useEffect(() => {
-    if (selectedStrategyId === null) {
-      return
-    }
-
-    const hasSelectedStrategy = strategies.some((strategy) => {
+  const hasSelectedStrategy =
+    selectedStrategyId !== null &&
+    strategies.some((strategy) => {
       return strategy.id === selectedStrategyId
     })
-
-    if (!hasSelectedStrategy) {
-      setSelectedStrategyId(null)
-    }
-  }, [selectedStrategyId, strategies])
+  const activeSelectedStrategyId = hasSelectedStrategy ? selectedStrategyId : null
+  const selectedStrategy =
+    strategies.find((strategy) => {
+      return strategy.id === activeSelectedStrategyId
+    }) ?? null
 
   return (
     <div
@@ -48,7 +40,7 @@ export function InvestmentStatusDesktopLayout({
       <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.72fr)]">
         <StrategyBoardSection
           items={strategies}
-          selectedStrategyId={selectedStrategyId}
+          selectedStrategyId={activeSelectedStrategyId}
           onSelectStrategy={setSelectedStrategyId}
         />
         <StrategyDetailPanel item={selectedStrategy} />
