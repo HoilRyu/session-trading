@@ -1,5 +1,5 @@
-import { DesktopRouteContent } from '../features/navigation/DesktopRouteContent'
+import { DashboardDesktopLayout } from '../features/dashboard/components/DashboardDesktopLayout'
 
 export function DashboardPage() {
-  return <DesktopRouteContent menuLabel="대시보드" />
+  return <DashboardDesktopLayout />
 }

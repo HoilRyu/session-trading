@@ -81,15 +81,14 @@ describe('App routing', () => {
     expect(
       within(desktopSidebarMenu).getByRole('link', { name: '설정' }),
     ).toBeInTheDocument()
-    expect(screen.getByText('상단 영역 - 대시보드')).toBeInTheDocument()
+    expect(screen.queryByText('상단 영역 - 대시보드')).not.toBeInTheDocument()
+    expect(screen.getByText('Dashboard Header')).toBeInTheDocument()
+    expect(screen.getByText('Summary 01')).toBeInTheDocument()
+    expect(screen.getByText('Primary Panel')).toBeInTheDocument()
     expect(screen.getByText('상단 앱바 영역 - 대시보드')).toBeInTheDocument()
     expect(screen.getByText('하단 탭 영역')).toBeInTheDocument()
-    expect(screen.getAllByText('콘텐츠 영역 - 대시보드')).toHaveLength(2)
-    expect(screen.getAllByText(/콘텐츠 영역/)).toHaveLength(2)
-    expect(screen.getAllByText(/콘텐츠 영역/)[1]).toHaveClass('flex-1')
-    expect(screen.getAllByText(/콘텐츠 영역/)[1]).not.toHaveClass(
-      'min-h-[calc(100vh-10rem)]',
-    )
+    expect(screen.getAllByText('콘텐츠 영역 - 대시보드')).toHaveLength(1)
+    expect(screen.getAllByText(/콘텐츠 영역/)).toHaveLength(1)
 
     expect(screen.getByText('서버 상태')).toBeInTheDocument()
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
