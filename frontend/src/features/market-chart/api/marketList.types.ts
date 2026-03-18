@@ -26,5 +26,6 @@ export type MarketListApiResponse = {
 export type MarketListQueryParams = {
   exchange?: string
   quote?: MarketListQuote
+  start?: number
   limit?: number
 }

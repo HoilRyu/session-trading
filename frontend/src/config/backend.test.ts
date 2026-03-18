@@ -5,6 +5,7 @@ import {
   getBackendHealthUrl,
   getBackendTargetLabel,
   getBackendWsBaseUrl,
+  getMarketsUrl,
 } from './backend'
 
 afterEach(() => {
@@ -28,5 +29,18 @@ describe('backend config', () => {
     expect(getBackendHealthUrl()).toBe('https://api.example.com:443/health')
     expect(getBackendWsBaseUrl()).toBe('wss://api.example.com:443')
     expect(getBackendTargetLabel()).toBe('api.example.com:443')
+  })
+
+  it('builds market list urls with start and limit', () => {
+    expect(
+      getMarketsUrl({
+        exchange: 'upbit',
+        quote: 'BTC',
+        start: 50,
+        limit: 50,
+      }),
+    ).toBe(
+      'http://127.0.0.1:8000/api/v1/markets?exchange=upbit&quote=BTC&start=50&limit=50',
+    )
   })
 })
